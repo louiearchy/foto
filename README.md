@@ -1,0 +1,32 @@
+# Foto
+
+
+### Dependencies
+
+##### Languages and Tools
+
+Foto depends on these languages and tools, make sure to install them and had them be
+available in your `PATH` environment variable.
+
+```
+1. NodeJS (node)
+2. Python (python)
+3. npm
+```
+
+##### NPM packages
+
+Foto depends on several npm packages like TypeScript, Fastify. We must first install these 
+dependencies using `npm install` if it's the first time you have acquired this project and
+you're setting up your development environment
+
+### Building & Running Server
+Being in this stage, I assume that you have installed the dependencies needed. To build and
+run the server, you only need to run the `foto.py`, by doing this:
+
+```
+python foto.py
+```
+
+This script automatically takes care of the building of the server, and then as it succesfully
+builds the server, it will then run the development server.
