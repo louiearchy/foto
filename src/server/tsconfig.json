@@ -1,0 +1,14 @@
+{
+    "include": [
+        "./**/**.ts"
+    ],
+    "compilerOptions": {
+        "tsBuildInfoFile": "../../built/server/.tsbuildinfo",
+        "incremental": true,
+        "outDir": "../../built/server/",
+        "target": "ES2016",
+        "moduleResolution": "NodeNext",
+        "module": "NodeNext",
+        "esModuleInterop": true
+    }
+}
