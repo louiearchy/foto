@@ -39,6 +39,7 @@ function InitializePages() {
     pages.homepage.AddScript("react")
     pages.homepage.AddScript("react-dom")
     pages.homepage.AddScript("pages/homepage.js")
+    pages.homepage.SetTitle("foto - a cloud photo album")
 }
 
 function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
