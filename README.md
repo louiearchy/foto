@@ -3,6 +3,31 @@
 
 ### Dependencies
 
+
+#### Fonts
+
+Foto uses additional fonts for its website, make sure to download the following fonts by clicking
+their links and putting it on a newly created folder:
+
+1. [Work Sans](https://fonts.google.com/specimen/Work+Sans)
+
+Once you have downloaded, make sure that the zip files are stored in a newly created
+folder, for this example, we would name our folder `fonts`. Now, we go to the root
+of the **foto** project, and you would see the script named `foto.py`, we would use
+this script to help us with unpacking these fonts. In order to do that, you just need
+to run the following command:
+
+```
+python foto.py --pack-fonts=<path/to/the/created/folder>
+```
+
+Since in this example, our folder is named `fonts`, the following command would look like
+this:
+
+```
+python foto.py --pack-fonts="fonts/"
+```
+
 ##### Languages and Tools
 
 Foto depends on these languages and tools, make sure to install them and had them be
