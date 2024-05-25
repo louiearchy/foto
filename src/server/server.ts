@@ -23,12 +23,11 @@ const HttpStatusCode = {
     InternalServerError: 500 
 }
 
-function IsFileExisting(filepath: string): Promise<boolean> {
+async function IsFileExisting(filepath: string): Promise<boolean> {
     try {
-        fs.access(filepath)
+        await fs.access(filepath, fs.constants.R_OK | fs.constants.F_OK)
         return Promise.resolve(true)
-    }
-    catch {
+    } catch {
         return Promise.resolve(false)
     }
 }
@@ -48,6 +47,8 @@ function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
     switch (fileExtension.toLowerCase()) {
         case "js":
             return "text/javascript"
+        case "css":
+            return "text/css"
         default:
             return undefined
     }
@@ -90,6 +91,22 @@ server.get("/pages/:reactpage", async (request, reply) => {
                 reply.code(HttpStatusCode.InternalServerError)
             }
         }
+    }
+})
+
+server.get("/assets/*", async (request, reply) => {
+    let truePathToAssetResource = request.url.replace("/assets/", "src/web/")
+    let assetResourceExists = await IsFileExisting(truePathToAssetResource)
+    if (assetResourceExists) {
+        let mimeType = DeduceMimeTypeByFileExtension(truePathToAssetResource)
+        if (mimeType) {
+            reply.type(mimeType)
+        }
+        let assetResourceData = await fs.readFile(truePathToAssetResource)
+        reply.send(assetResourceData)
+    }
+    else {
+        reply.code(HttpStatusCode.NotFound)
     }
 })
 
