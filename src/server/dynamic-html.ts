@@ -204,6 +204,13 @@ export default class HTMLPage {
         this.isChanged = true
     }
 
+    SetReactPage(src: string) {
+        let newPageScriptTag = new HTMLScriptTag()
+        newPageScriptTag.AddAttributes({ type: "module", src })
+        this.htmlHeadTag.AddChildTag(newPageScriptTag)
+        this.isChanged = true
+    }
+
     AddStylesheet(src: string) {
         let newStylesheet = new HTMLLinkTag()
         newStylesheet.AddAttributes({ rel: "stylesheet", type: "text/css", href: src })

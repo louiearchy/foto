@@ -37,7 +37,7 @@ function InitializePages() {
     pages.homepage.AddMetaTag({ name: "viewport", content: "width=device-width, initial-scale=1" })
     pages.homepage.AddScript("react")
     pages.homepage.AddScript("react-dom")
-    pages.homepage.AddScript("pages/homepage.js")
+    pages.homepage.SetReactPage("pages/homepage.js")
     pages.homepage.AddStylesheet("assets/css/homepage.css")
     pages.homepage.SetTitle("foto - a cloud photo album")
 }
