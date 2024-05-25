@@ -164,6 +164,12 @@ class HTMLTitleTag extends XMLTag {
     }
 }
 
+class HTMLLinkTag extends XMLTag {
+    constructor() {
+        super("link")
+    }
+}
+
 export default class HTMLPage {
     
     protected buffer: string
@@ -195,6 +201,13 @@ export default class HTMLPage {
         let newScriptTag = new HTMLScriptTag()
         newScriptTag.AddAttributes({src})
         this.htmlHeadTag.AddChildTag(newScriptTag)
+        this.isChanged = true
+    }
+
+    AddStylesheet(src: string) {
+        let newStylesheet = new HTMLLinkTag()
+        newStylesheet.AddAttributes({ rel: "stylesheet", type: "text/css", href: src })
+        this.htmlHeadTag.AddChildTag(newStylesheet)
         this.isChanged = true
     }
 
