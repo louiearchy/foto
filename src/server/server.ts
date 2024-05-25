@@ -77,19 +77,24 @@ function BindPathToFile(requestPath: string, filepath: string, server) {
 
 server.get("/", (request, reply) => { reply.type("text/html").send(pages.homepage.data) })
 
-server.get("/pages/:reactpage", async (request, reply) => {
-    const reactpage = (request.params as any)?.reactpage
-    if (reactpage) {
-        const truePathToReactPage = path.join("src/web/pages/", reactpage.replace(".js", ".tsx"))
-        let reactPageExists = await IsFileExisting(truePathToReactPage)
-        if (reactPageExists) {
-            let pageData = await dynamicReactPageManager.GetPage(truePathToReactPage)
-            if (pageData) {
-                reply.code(HttpStatusCode.Ok).type("text/javascript").send(pageData)
-            }
-            else /* if compilation error occurs */ {
-                reply.code(HttpStatusCode.InternalServerError)
-            }
+server.get("/pages/*", async (request, reply) => {
+    /**
+     * isWithoutJsFileExtension is to detect whether the request has js file extension on it,
+     * because whenever we use import other components or scripts such as in the react pages
+     * we omit the `.js` which in this case without this, the server would fail to find the 
+     * equivalent file for the request
+     */
+    let isWithoutJsFileExtension = request.url.lastIndexOf(".js") == -1
+    const truePathToReactPage = path.join("src/web/", 
+        (isWithoutJsFileExtension) ? request.url + ".tsx" : request.url.replace(".js", ".tsx"))
+    let reactPageExists = await IsFileExisting(truePathToReactPage)
+    if (reactPageExists) {
+        let pageData = await dynamicReactPageManager.GetPage(truePathToReactPage)
+        if (pageData) {
+            reply.code(HttpStatusCode.Ok).type("text/javascript").send(pageData)
+        }
+        else /* if compilation error occurs */ {
+            reply.code(HttpStatusCode.InternalServerError)
         }
     }
 })
