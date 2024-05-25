@@ -1,7 +1,9 @@
 
 import Fastify from "fastify"
 import HTMLPage from "./dynamic-html"
+import DynamicReactPageManager from "./dynamic-react-page-manager"
 import fs from "node:fs/promises"
+import path from "node:path"
 
 const PORT = 3000
 const HOST = "localhost"
@@ -11,6 +13,9 @@ const server = Fastify()
 const pages = {
     homepage: new HTMLPage()
 }
+
+const drpmWatchFilePath = "built/drpm-watch-file.json"
+const dynamicReactPageManager = new DynamicReactPageManager(drpmWatchFilePath, "built/web/pages/")
 
 const HttpStatusCode = {
     Ok: 200,
@@ -68,8 +73,27 @@ function BindPathToFile(requestPath: string, filepath: string, server) {
 }
 
 server.get("/", (request, reply) => { reply.type("text/html").send(pages.homepage.data) })
+
+server.get("/pages/:reactpage", async (request, reply) => {
+    const reactpage = (request.params as any)?.reactpage
+    if (reactpage) {
+        const truePathToReactPage = path.join("src/web/pages/", reactpage.replace(".js", ".tsx"))
+        let reactPageExists = await IsFileExisting(truePathToReactPage)
+        if (reactPageExists) {
+            let pageData = await dynamicReactPageManager.GetPage(truePathToReactPage)
+            if (pageData) {
+                reply.code(HttpStatusCode.Ok).type("text/javascript").send(pageData)
+            }
+            else /* if compilation error occurs */ {
+                reply.code(HttpStatusCode.InternalServerError)
+            }
+        }
+    }
+})
+
 BindPathToFile("/react", "node_modules/react/umd/react.development.js", server)
 BindPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", server)
+
 
 function main() {
     InitializePages()
@@ -91,6 +115,11 @@ function main() {
     
     )
 }
+
+process.on('SIGINT', function() {
+    dynamicReactPageManager.Save()
+    process.exit(0)
+})
 
 
 main()
