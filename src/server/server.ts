@@ -49,6 +49,10 @@ function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
             return "text/javascript"
         case "css":
             return "text/css"
+        case "otf":
+            return "font/otf"
+        case "ttf":
+            return "font/ttf"
         default:
             return undefined
     }
@@ -111,6 +115,22 @@ server.get("/assets/*", async (request, reply) => {
         reply.send(assetResourceData)
     }
     else {
+        reply.code(HttpStatusCode.NotFound)
+    }
+})
+
+server.get("/fonts/*", async (request, reply) => {
+    let truePathToFontResource = path.join("built/web/", request.url)
+    let fontResourceExists = await IsFileExisting(truePathToFontResource)
+    if (fontResourceExists) {
+        let mimeType = DeduceMimeTypeByFileExtension(truePathToFontResource)
+        if (mimeType) {
+            reply.type(mimeType)
+        }
+        let fontResourceData = await fs.readFile(truePathToFontResource)
+        reply.send(fontResourceData)
+    }
+    else /* if the font resource does not exists */ {
         reply.code(HttpStatusCode.NotFound)
     }
 })
