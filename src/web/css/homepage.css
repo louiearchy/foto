@@ -1,0 +1,126 @@
+
+:root {
+    --standard-padding: 0.5cm;
+    --standard-all-padding: calc(--standard-padding * 2);
+    --main-color: #FFA62F;
+    --page-color: white;
+    --text-color: black;
+    --main-font: 'Work Sans';
+    --lighter-main-color: #FFC96F;
+    --regular: 400;
+    --bold: 700;
+    --extra-bold: 900;
+}
+
+@font-face {
+    font-family: 'Work Sans';
+    font-weight: var(--regular);
+    src: url('/fonts/work_sans/static/WorkSans-Regular.ttf');
+}
+
+@font-face {
+    font-family: 'Work Sans';
+    font-weight: var(--bold);
+    src: url('/fonts/work_sans/static/WorkSans-Bold.ttf');
+}
+
+@font-face {
+    font-family: 'Work Sans';
+    font-weight: var(--extra-bold);
+    src: url('/fonts/work_sans/static/WorkSans-ExtraBold.ttf');
+}
+
+body {
+    padding: 0.5cm;
+    margin: 0;
+    background-color: var(--page-color);
+    color: var(--text-color);
+    font-family: var(--main-font);
+    font-weight: var(--regular);
+}
+
+body > div {
+    min-width: calc(100vw - var(--standard-all-padding));
+    min-height: calc(100vh - var(--standard-all-padding));
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+nav {
+    width: calc(100vw - var(--standard-all-padding));
+    flex-grow: 0.5;
+    max-height: 1.5cm;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5cm;
+}
+
+nav > a {
+    color: var(--main-color);
+    text-decoration: none;
+    font-family: var(--main-font);
+    font-weight: var(--bold);
+    font-size: 1em;
+    padding: 0.2cm 0.5cm;
+    border-radius: 0.5cm;
+}
+
+nav > a:hover {
+    transition: 
+        color 200ms 150ms, 
+        background-color 150ms;
+    background-color: var(--main-color);
+    border: none;
+    color: white;
+}
+
+.flex-all-center {
+    align-items: center;
+    justify-content: center;
+}
+
+.very-large-font {
+    font-size: 9em;
+}
+
+.large-font {
+    font-size: 3em;
+}
+
+.no-margin {
+    margin: 0;
+}
+
+button {
+    font-family: var(--main-font);
+    font-weight: var(--regular);
+    font-size: 1.5em;
+    border: none;
+    border-radius: 0.4cm;
+    padding: 0.2cm 0.6cm;
+}
+
+button.classic {
+    background-color: var(--lighter-main-color);
+    color: black;
+    outline: solid var(--main-color) 0.15rem;
+}
+
+button.classic:hover {
+    transition: background-color 200ms;
+    background-color: var(--main-color);
+}
+
+.main-color {
+    color: var(--main-color);
+}
