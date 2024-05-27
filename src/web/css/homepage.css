@@ -65,7 +65,7 @@ nav {
     gap: 0.5cm;
 }
 
-nav > a {
+nav > .desktop > a {
     color: var(--main-color);
     text-decoration: none;
     font-family: var(--main-font);
@@ -75,7 +75,7 @@ nav > a {
     border-radius: 0.5cm;
 }
 
-nav > a:hover {
+nav > .desktop > a:hover {
     transition: 
         color 200ms 150ms, 
         background-color 150ms;
@@ -123,4 +123,73 @@ button.classic:hover {
 
 .main-color {
     color: var(--main-color);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mobile-nav-button {
+    /* would only be seen in mobile */
+    display: none;
+    background-color: transparent;
+    border: none;
+}
+
+@media (min-width: 300px) and (max-width: 500px) {
+    body {
+        padding: 0.4cm;
+    }
+    nav {
+        justify-content: flex-start;
+    }
+    nav > .desktop {
+        display: none;
+    }
+    .very-large-font {
+        font-size: 6em;
+    }
+    .large-font {
+        font-size: 2.5em;
+    }
+    button.classic:focus {
+        transition: background-color 200ms;
+        background-color: var(--main-color);
+    }
+    .mobile-nav-button {
+        display: block;
+    }
+    .mobile-nav-button > img {
+        height: 1cm;
+        width: 1cm;
+    }
+    #mobile-navigation-bar {
+        background-color: #f2f5f3;
+        position: absolute;
+        left: -0.05cm;
+        top: -0.05cm;
+        width: 75vw;
+        height: calc(100vh + 0.05cm);
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        padding-top: 1cm;
+    }
+    #mobile-navigation-bar > #close-navigation-bar {
+        height: 1cm;
+        width: 1cm;
+    }
+    #mobile-navigation-bar > a  {
+        display: block;
+        font-family: 'Work Sans';
+        font-weight: 400;
+        text-decoration: none;
+        color: black;
+        padding: 0.3cm 0.8cm;
+    }
+    #mobile-navigation-bar > a:focus {
+        background-color: var(--main-color);
+        color: white;
+    }
 }

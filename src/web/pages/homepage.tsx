@@ -27,13 +27,51 @@ function FlexRow(props) {
     return <div className={classes} style={props?.style}>{props?.children}</div>
 }
 
-function NavigationBar() {
-    return (<nav>
+function MobileNavigationBar(props) {
+    return <div id="mobile-navigation-bar">
+        <button className="mobile-nav-button" style={{
+            alignSelf: "flex-start"
+        }} onClick={
+            () => {
+                if (props?.SetMobileNavVisibility) {
+                    props.SetMobileNavVisibility(false)
+                }
+            }
+        }>
+            <img src="/assets/svgs/closenav.svg" id="close-navigation-bar"/>
+        </button>
         <a href="/">Home</a>
         <a>Terms & Conditions</a>
         <a>Privacy Policy</a>
         <a>About Us</a>
-    </nav>)
+    </div>
+}
+
+function NavigationBar() {
+    let [isMobileNavigationBarVisible, SetMobileNavVisibility] = React.useState(false)
+
+    return (
+    <>
+        <nav>
+            <div className="desktop">
+                <a href="/">Home</a>
+                <a>Terms & Conditions</a>
+                <a>Privacy Policy</a>
+                <a>About Us</a>
+            </div>
+            <button className="mobile-nav-button" onClick={
+                () => { 
+                    SetMobileNavVisibility(true) 
+                }
+            }>
+                <img src="/assets/svgs/navicon.svg" id="mobile-nav-icon"/>
+            </button>
+        </nav>
+        {
+            isMobileNavigationBarVisible &&
+            <MobileNavigationBar SetMobileNavVisibility={SetMobileNavVisibility}/>
+        }
+    </>)
 }
 
 function Main() {
@@ -48,12 +86,12 @@ function Main() {
                 color: "white",
                 padding: "0 1cm",
                 borderRadius: "1cm"
-            }} className="very-large-font no-margin">Foto</h1>
+            }} className="very-large-font no-margin text-center">Foto</h1>
             <p style={{
                 position: "relative",
                 top: "-0.7cm"
             }}
-            className="large-font no-margin main-color">a cloud photo album</p>
+            className="large-font no-margin main-color text-center">a cloud photo album</p>
             <FlexRow className="flex-all-center" style={{
                 gap: "1cm"
             }}>
