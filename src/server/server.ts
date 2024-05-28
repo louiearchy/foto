@@ -37,6 +37,9 @@ function InitializePages() {
     pages.homepage.AddMetaTag({ name: "viewport", content: "width=device-width, initial-scale=1" })
     pages.homepage.AddScript("react")
     pages.homepage.AddScript("react-dom")
+    pages.homepage.AddScript("remix-router")
+    pages.homepage.AddScript("react-router")
+    pages.homepage.AddScript("react-router-dom")
     pages.homepage.SetReactPage("pages/homepage.js")
     pages.homepage.AddStylesheet("assets/css/homepage.css")
     pages.homepage.SetTitle("foto - a cloud photo album")
@@ -139,7 +142,9 @@ server.get("/fonts/*", async (request, reply) => {
 
 BindPathToFile("/react", "node_modules/react/umd/react.development.js", server)
 BindPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", server)
-
+BindPathToFile("/react-router-dom", "node_modules/react-router-dom/dist/umd/react-router-dom.development.js", server)
+BindPathToFile("/react-router", "node_modules/react-router/dist/umd/react-router.development.js", server)
+BindPathToFile("/remix-router", "node_modules/@remix-run/router/dist/router.umd.js", server)
 
 function main() {
     InitializePages()

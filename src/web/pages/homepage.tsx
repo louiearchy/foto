@@ -1,6 +1,7 @@
 
 import React from "react"
 import ReactDOM from "react-dom/client"
+import ReactRouterDOM from "react-router-dom"
 
 const rootDiv = document.createElement("div")
 const root = ReactDOM.createRoot(rootDiv)
@@ -113,7 +114,18 @@ function Homepage() {
     )
 }
 
+const router = ReactRouterDOM.createBrowserRouter([
+    {
+        path: "/",
+        element: <Homepage/>
+    }
+])
+
 window.onload = function() {
     document.body.appendChild(rootDiv)
-    root.render(<Homepage/>)
+    root.render(
+        <React.StrictMode>
+            <ReactRouterDOM.RouterProvider router={router} />
+        </React.StrictMode>
+    )
 }
