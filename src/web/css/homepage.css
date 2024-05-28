@@ -101,22 +101,23 @@ nav > .desktop > a:hover {
     margin: 0;
 }
 
-button {
+.classic-button {
     font-family: var(--main-font);
     font-weight: var(--regular);
     font-size: 1.5em;
     border: none;
     border-radius: 0.4cm;
     padding: 0.2cm 0.6cm;
+    text-decoration: none;
 }
 
-button.classic {
+.classic-button {
     background-color: var(--lighter-main-color);
     color: black;
     outline: solid var(--main-color) 0.15rem;
 }
 
-button.classic:hover {
+.classic-button:hover {
     transition: background-color 200ms;
     background-color: var(--main-color);
 }

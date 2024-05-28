@@ -6,10 +6,6 @@ import ReactRouterDOM from "react-router-dom"
 const rootDiv = document.createElement("div")
 const root = ReactDOM.createRoot(rootDiv)
 
-function ClassicButton(props) {
-    return <button className="classic">{props?.text}</button>
-}
-
 function FlexColumn(props) {
     let classes = "flex-column"
     if (props?.className) {
@@ -50,15 +46,35 @@ function MobileNavigationBar(props) {
 
 function NavigationBar() {
     let [isMobileNavigationBarVisible, SetMobileNavVisibility] = React.useState(false)
-
+    let navigation_links_list = [
+        {
+            href: "/",
+            label: "Home"
+        },
+        {
+            label: "Terms & Conditions"
+        },
+        {
+            label: "Privacy Policy"
+        },
+        {
+            label: "About Us"
+        }
+    ]
+    let navigation_links = navigation_links_list.map( navigation_link => {
+        if (navigation_link?.href) {
+            return <ReactRouterDOM.Link to={navigation_link.href}>{navigation_link.label}</ReactRouterDOM.Link>
+        }
+        else {
+            return <a>{navigation_link.label}</a>
+        }
+        
+    })
     return (
     <>
         <nav>
             <div className="desktop">
-                <a href="/">Home</a>
-                <a>Terms & Conditions</a>
-                <a>Privacy Policy</a>
-                <a>About Us</a>
+                {navigation_links}
             </div>
             <button className="mobile-nav-button" onClick={
                 () => { 
@@ -96,8 +112,8 @@ function Main() {
             <FlexRow className="flex-all-center" style={{
                 gap: "1cm"
             }}>
-                <ClassicButton text="Log In"/>
-                <ClassicButton text="Sign Up"/>
+                <ReactRouterDOM.Link to={"/log-in"} className="classic-button">Log In</ReactRouterDOM.Link>
+                <ReactRouterDOM.Link to={"/sign-up"} className="classic-button">Sign Up</ReactRouterDOM.Link>
             </FlexRow>
         </div>
     )
