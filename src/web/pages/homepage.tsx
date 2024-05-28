@@ -6,6 +6,11 @@ import ReactRouterDOM from "react-router-dom"
 const rootDiv = document.createElement("div")
 const root = ReactDOM.createRoot(rootDiv)
 
+enum AccountSubmissionContext {
+    LogIn,
+    SignUp
+}
+
 function FlexColumn(props) {
     let classes = "flex-column"
     if (props?.className) {
@@ -120,6 +125,34 @@ function Main() {
     )
 }
 
+function Capitalize(value: string): string {
+    return value[0].toUpperCase() + value.substring(1).toLowerCase()
+}
+
+function TextForm(props) {
+    let id = props?.label.toLowerCase()
+    let label = Capitalize(props?.label as string)
+    let classes = (props?.isWarningIconVisible) ? "warning" : undefined
+    return <div style={props?.style}>
+        <div style={{
+            display: "flex",
+            height: "1cm",
+            flexDirection: "row",
+            alignItems: "center"
+        }}>
+            <label htmlFor={id} className={classes}>{label}</label>
+            {
+                props?.isWarningIconVisible && 
+                <img src="/assets/svgs/warningicon.svg" className="warningicon"/>
+            }
+        </div>
+        <input type="text" id={id} className={classes}/>
+        <div style={{
+            height: "calc(1em + 0.5cm)"
+        }} className="warning">{ (props?.isWarningIconVisible) ? props?.prompt : undefined }</div>
+    </div>
+}
+
 function Homepage() {
     return (
         <FlexColumn style={{
@@ -131,10 +164,114 @@ function Homepage() {
     )
 }
 
+function HandleAccountSubmission(
+    context: AccountSubmissionContext
+): {
+    IsUsernameFieldEmpty: boolean,
+    IsPasswordFieldEmpty: boolean,
+    IsUsernameFieldCharactersInsufficient: boolean,
+    IsPasswordFieldCharactersInsufficient: boolean
+} {
+    let result = {
+        IsUsernameFieldEmpty: false,
+        IsPasswordFieldEmpty: false,
+        IsUsernameFieldCharactersInsufficient: false,
+        IsPasswordFieldCharactersInsufficient: false
+    }
+    let username = (document.getElementById("username") as HTMLInputElement ).value
+    let password = (document.getElementById("password") as HTMLInputElement).value
+    let username_minimum_characters = 4
+    let password_minimum_characters = 4
+    
+    result.IsUsernameFieldEmpty = (username.length == 0)
+    result.IsPasswordFieldEmpty = (password.length == 0)
+    result.IsUsernameFieldCharactersInsufficient = (username.length > 0 && username.length < username_minimum_characters)
+    result.IsPasswordFieldCharactersInsufficient = (password.length > 0 && password.length < password_minimum_characters)
+
+    if (Object.values(result).includes(true)) {
+        return result
+    }
+
+
+    return result
+    
+}
+
+function LogInPage() {
+    let [isUsernameWarningIconVisible, SetUsernameWarning] = React.useState(false)
+    let [isPasswordWarningIconVisible, SetPasswordWarning] = React.useState(false)
+    let [usernameFieldPrompt, SetUsernameFieldPrompt]: [string, React.Dispatch<React.SetStateAction<string>>] = React.useState("")
+    let [passwordFieldPrompt, SetPasswordFieldPrompt]: [string, React.Dispatch<React.SetStateAction<string>>] = React.useState("")
+
+
+    return (
+        <FlexColumn style={{
+            height: "calc(100vh - 1cm)"
+        }}>
+            <NavigationBar/>
+            <div className="flex-row flex-all-center" style={{
+                width: "100%",
+                height: "100%"
+            }}>
+                <div id="account-form">
+                    <ReactRouterDOM.Link to={"/"} className="classic-button">Back to Homepage</ReactRouterDOM.Link>
+                    <div style={{
+                        marginTop: "2cm"
+                    }}>
+                        <TextForm label="username" isWarningIconVisible={isUsernameWarningIconVisible} prompt={usernameFieldPrompt}/>
+                        <TextForm label="password" style={
+                            {marginTop: "0.1cm"}
+                        } isWarningIconVisible={isPasswordWarningIconVisible} prompt={passwordFieldPrompt}/>
+                        <button onClick={
+                            () => { 
+                                let account_submission_result = HandleAccountSubmission(AccountSubmissionContext.LogIn) 
+                                if (account_submission_result.IsUsernameFieldEmpty) {
+                                    SetUsernameWarning(true)
+                                    SetUsernameFieldPrompt("Username must be filled!")
+                                }
+                                if (account_submission_result.IsPasswordFieldEmpty) {
+                                    SetPasswordWarning(true)
+                                    SetPasswordFieldPrompt("Password must be filled!")
+                                }
+                                if (account_submission_result.IsUsernameFieldCharactersInsufficient) {
+                                    SetUsernameWarning(true)
+                                    SetUsernameFieldPrompt("Username must be 4 characters or above!")
+                                }
+                                if (account_submission_result.IsPasswordFieldCharactersInsufficient) {
+                                    SetPasswordWarning(true)
+                                    SetPasswordFieldPrompt("Password must be 4 characters or above!")
+                                }
+                                if (isUsernameWarningIconVisible && (
+                                    !account_submission_result.IsUsernameFieldEmpty &&
+                                    !account_submission_result.IsUsernameFieldCharactersInsufficient
+                                )) {
+                                    SetUsernameWarning(false)
+                                }
+                                if (isPasswordWarningIconVisible && (
+                                    !account_submission_result.IsPasswordFieldEmpty &&
+                                    !account_submission_result.IsPasswordFieldCharactersInsufficient
+                                )) {
+                                    SetPasswordWarning(false)
+                                }
+                            }
+                        } className="classic-button" style={{
+                            marginTop: "1cm"
+                        }}>Log In</button>
+                    </div>
+                </div>
+            </div>
+        </FlexColumn>
+    )
+}
+
 const router = ReactRouterDOM.createBrowserRouter([
     {
         path: "/",
         element: <Homepage/>
+    },
+    {
+        path: "/log-in",
+        element: <LogInPage/>
     }
 ])
 

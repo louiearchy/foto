@@ -137,6 +137,46 @@ nav > .desktop > a:hover {
     border: none;
 }
 
+#account-form {
+    height: 90%;
+    width: 90%;
+    max-width: 15cm;
+    max-height: 15cm;
+    background-color: white;
+    border-radius: 0.2cm;
+    box-shadow: 2px 38px 94px -19px rgba(219,219,219,0.58);
+    box-sizing: border-box;
+    padding: 1cm;
+}
+
+label {
+    font-size: 1.5em;
+}
+
+.warning {
+    color: #ff060b;
+}
+
+input[type="text"] {
+    font-family: "Work Sans";
+    font-size: 1.2em;
+    padding: 0.3cm 0.5cm;
+    border: solid 0.01rem black;
+    border-radius: 0.05cm;
+}
+
+input[type="text"]:focus {
+    outline: solid 0.1rem var(--main-color);
+    border-color: var(--main-color);
+    color: var(--main-color);
+}
+
+.warningicon {
+    height: 1.2em;
+    width: 1.2em;
+    margin-left: 0.25cm;
+}
+
 @media (min-width: 300px) and (max-width: 500px) {
     body {
         padding: 0.4cm;
