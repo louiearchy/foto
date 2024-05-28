@@ -85,6 +85,8 @@ function BindPathToFile(requestPath: string, filepath: string, server) {
 }
 
 server.get("/", (request, reply) => { reply.type("text/html").send(pages.homepage.data) })
+server.get("/log-in", (request, reply) => { reply.type("text/html").send(pages.homepage.data) })
+server.get("/sign-up", (request, reply) => {reply.type("text/html").send(pages.homepage.data) })
 
 server.get("/pages/*", async (request, reply) => {
     /**
