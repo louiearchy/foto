@@ -61,12 +61,13 @@ function NavigationBar() {
             label: "About Us"
         }
     ]
+    let id_count = 0
     let navigation_links = navigation_links_list.map( navigation_link => {
         if (navigation_link?.href) {
-            return <ReactRouterDOM.Link to={navigation_link.href}>{navigation_link.label}</ReactRouterDOM.Link>
+            return <ReactRouterDOM.Link to={navigation_link.href} key={id_count++}>{navigation_link.label}</ReactRouterDOM.Link>
         }
         else {
-            return <a>{navigation_link.label}</a>
+            return <a key={id_count++}>{navigation_link.label}</a>
         }
         
     })
