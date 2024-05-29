@@ -39,6 +39,16 @@ available in your `PATH` environment variable.
 3. npm
 ```
 
+#### Python libraries
+
+The foto script named `foto.py` depends on a package called `psycopg` which would be needed
+in the automated setting up of database at every start up of the server. To install the said 
+package, all you have to do is to run the following command:
+
+```
+pip install psycopg
+```
+
 ##### NPM packages
 
 Foto depends on several npm packages like TypeScript, Fastify. We must first install these 
