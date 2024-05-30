@@ -169,6 +169,23 @@ async function QueryAccountInfo(username: string, password: string): Promise<boo
     return Promise.resolve(query.rows[0]?.exists ?? false)
 }
 
+/**
+ * This checks if the username has already been registered in the accounts table
+ * @param username 
+ */
+async function CheckUsernameIfAlreadyRegistered(username: string): Promise<boolean> {
+    let query = await FOTO_DB_CLIENT.query(
+        `SELECT EXISTS( SELECT username FROM accounts WHERE username='${username}')`
+    )
+    return Promise.resolve(query.rows[0]?.exists ?? true)
+}
+
+async function RecordAccount(username: string, password: string) {
+    await FOTO_DB_CLIENT.query(
+        `INSERT INTO accounts (username, password) VALUES (${username}, ${password})`
+    )
+}
+
 async function SaveSession(username: string, sessionid: string): Promise<void> {
     await FOTO_DB_CLIENT.query(`INSERT INTO sessions (username, sessionid) VALUES (${username}, ${sessionid})`)
 }
@@ -205,6 +222,38 @@ server.post("/log-in", async (request, reply) => {
         reply.code(HttpStatusCode.NotFound)
     }
         
+})
+
+server.post("/sign-up", async (request, reply) => {
+
+    let account_info = (request.body as AccountSubmissionInfo)
+    const MISSING_ACCOUNT_INFO = "Missing account info"
+    const USERNAME_ALREADY_EXISTS = "USERNAME_ALREADY_EXISTS"
+    if (!account_info?.username || !account_info.password) {
+        reply.code(HttpStatusCode.BadRequest)
+        reply.send(MISSING_ACCOUNT_INFO)
+        return
+    }
+
+    /* if account info is submitted completely */
+
+    let username = account_info.username
+    let password = account_info.password
+
+    const username_exists = await CheckUsernameIfAlreadyRegistered(username)
+    
+    if (username_exists) {
+        reply.code(HttpStatusCode.BadRequest).send(USERNAME_ALREADY_EXISTS)
+        return
+    }
+
+    RecordAccount(username, password)
+
+    let session_id = GenerateSessionID()
+    SaveSession(username, session_id)
+    reply.code(HttpStatusCode.Ok)
+    reply.header('set-cookie', `sessionid=${session_id}`)
+    
 })
 
 BindPathToFile("/react", "node_modules/react/umd/react.development.js", server)
