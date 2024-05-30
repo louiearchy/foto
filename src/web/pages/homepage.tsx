@@ -230,7 +230,7 @@ function SubmitAccountInfo(
 }
 
 
-function LogInPage() {
+function AccountSubmission({context}) {
     let [isUsernameWarningIconVisible, SetUsernameWarning] = React.useState(false)
     let [isPasswordWarningIconVisible, SetPasswordWarning] = React.useState(false)
     let [usernameFieldPrompt, SetUsernameFieldPrompt]: [string, React.Dispatch<React.SetStateAction<string>>] = React.useState("")
@@ -297,7 +297,7 @@ function LogInPage() {
                             }
                         } className="classic-button" style={{
                             marginTop: "1cm"
-                        }}>Log In</button>
+                        }}>{context}</button>
                         {
                             (accountSubmissionMsgPrompt != "") && 
                             <div className="account-submission-prompt warning" style={{
@@ -311,6 +311,14 @@ function LogInPage() {
     )
 }
 
+function LogInPage() {
+    return <AccountSubmission context={"Log In"}/>
+}
+
+function SignUpPage() {
+    return <AccountSubmission context={"Sign Up"}/>
+}
+
 const router = ReactRouterDOM.createBrowserRouter([
     {
         path: "/",
@@ -319,6 +327,10 @@ const router = ReactRouterDOM.createBrowserRouter([
     {
         path: "/log-in",
         element: <LogInPage/>
+    },
+    {
+        path: "/sign-up",
+        element: <SignUpPage/>
     }
 ])
 
