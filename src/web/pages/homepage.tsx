@@ -6,9 +6,10 @@ import ReactRouterDOM from "react-router-dom"
 const rootDiv = document.createElement("div")
 const root = ReactDOM.createRoot(rootDiv)
 
-enum AccountSubmissionContext {
-    LogIn,
-    SignUp
+const HttpStatusCode = {
+    Ok: 200,
+    NotFound: 404,
+    BadRequest: 400
 }
 
 function FlexColumn(props) {
@@ -164,9 +165,7 @@ function Homepage() {
     )
 }
 
-function HandleAccountSubmission(
-    context: AccountSubmissionContext
-): {
+function ValidateAccountSubmissionFields(): {
     IsUsernameFieldEmpty: boolean,
     IsPasswordFieldEmpty: boolean,
     IsUsernameFieldCharactersInsufficient: boolean,
@@ -192,16 +191,51 @@ function HandleAccountSubmission(
         return result
     }
 
-
     return result
-    
+
 }
+
+function SubmitAccountInfo(
+    accountPromptSetter: React.Dispatch<React.SetStateAction<string>>
+) {
+    let username = (document.getElementById("username") as HTMLInputElement).value
+    let password = (document.getElementById("password") as HTMLInputElement).value
+    
+    let xhttp = new XMLHttpRequest()
+    // "/log-in" or "/sign-up"
+    let context = window.location.pathname.toLowerCase()
+    xhttp.onreadystatechange = function() {
+        if (xhttp.readyState == 4)  {
+            if (xhttp.status == HttpStatusCode.Ok) {
+                window.location.assign("/home")
+                return
+            }
+            if (xhttp.status == HttpStatusCode.NotFound) {
+                if (context == "/log-in") {
+                    accountPromptSetter("Username and password does not match!")
+                    return
+                }
+            }
+            if (xhttp.status == HttpStatusCode.BadRequest) {
+                if (context == "/sign-up" && xhttp.responseText == "USERNAME_ALREADY_EXISTS") {
+                    accountPromptSetter("Username already exists!")
+                    return
+                }
+            }
+        }
+    }
+    xhttp.open("POST", context, true)
+    xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+    xhttp.send(`username=${username}&password=${password}`)
+}
+
 
 function LogInPage() {
     let [isUsernameWarningIconVisible, SetUsernameWarning] = React.useState(false)
     let [isPasswordWarningIconVisible, SetPasswordWarning] = React.useState(false)
     let [usernameFieldPrompt, SetUsernameFieldPrompt]: [string, React.Dispatch<React.SetStateAction<string>>] = React.useState("")
     let [passwordFieldPrompt, SetPasswordFieldPrompt]: [string, React.Dispatch<React.SetStateAction<string>>] = React.useState("")
+    let [accountSubmissionMsgPrompt, SetAccountSubmissionMsgPrompt] = React.useState("")
 
 
     return (
@@ -224,7 +258,7 @@ function LogInPage() {
                         } isWarningIconVisible={isPasswordWarningIconVisible} prompt={passwordFieldPrompt}/>
                         <button onClick={
                             () => { 
-                                let account_submission_result = HandleAccountSubmission(AccountSubmissionContext.LogIn) 
+                                let account_submission_result = ValidateAccountSubmissionFields() 
                                 if (account_submission_result.IsUsernameFieldEmpty) {
                                     SetUsernameWarning(true)
                                     SetUsernameFieldPrompt("Username must be filled!")
@@ -253,10 +287,21 @@ function LogInPage() {
                                 )) {
                                     SetPasswordWarning(false)
                                 }
+
+                                let is_good_for_server_submission = !Object.values(account_submission_result).includes(true)
+
+                                if (is_good_for_server_submission) {
+                                    SubmitAccountInfo(SetAccountSubmissionMsgPrompt)
+                                }
+
                             }
                         } className="classic-button" style={{
                             marginTop: "1cm"
                         }}>Log In</button>
+                        {
+                            (accountSubmissionMsgPrompt != "") && 
+                            <div>{accountSubmissionMsgPrompt}</div>
+                        }
                     </div>
                 </div>
             </div>
