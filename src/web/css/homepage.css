@@ -177,6 +177,15 @@ input[type="text"]:focus {
     margin-left: 0.25cm;
 }
 
+.account-submission-prompt {
+    padding: 0.2cm 0.5cm;
+    width: fit-content;
+}
+.account-submission-prompt.warning {
+    background-color: #ff060b;
+    color: white;
+}
+
 @media (min-width: 300px) and (max-width: 500px) {
     body {
         padding: 0.4cm;

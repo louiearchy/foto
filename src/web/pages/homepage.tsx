@@ -300,7 +300,9 @@ function LogInPage() {
                         }}>Log In</button>
                         {
                             (accountSubmissionMsgPrompt != "") && 
-                            <div>{accountSubmissionMsgPrompt}</div>
+                            <div className="account-submission-prompt warning" style={{
+                                marginTop: "0.5cm"
+                            }}>{accountSubmissionMsgPrompt}</div>
                         }
                     </div>
                 </div>
