@@ -242,4 +242,23 @@ input[type="text"]:focus {
         background-color: var(--main-color);
         color: white;
     }
+    .account-submission-prompt {
+        font-size: 0.8em;
+        padding: 0.2cm;
+    }
+    .classic-button {
+        font-size: 1.2em;
+    }
+    #account-form {
+        height: 95%;
+        width: 95%;
+        margin-top: 0.5cm;
+        padding: 0.5cm;
+    }
+    #account-form input[type="text"] {
+        width: 100%;
+    }
+    input[type="text"] {
+        font-size: 1em;
+    }
 }
