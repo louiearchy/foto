@@ -4,11 +4,26 @@ import HTMLPage from "./dynamic-html"
 import DynamicReactPageManager from "./dynamic-react-page-manager"
 import fs from "node:fs/promises"
 import path from "node:path"
+import pg from "pg"
+import { v4 as uuidv4 } from "uuid"
 
 const PORT = 3000
 const HOST = "localhost"
+const FOTO_DB_CONNECTION_CONFIG = {
+    host: "127.0.0.1",
+    port: 5432,
+    database: 'fotodb'
+}
+const FOTO_DB_CLIENT = new pg.Client(FOTO_DB_CONNECTION_CONFIG)
+
+interface AccountSubmissionInfo {
+    username?: string,
+    password?: string
+}
 
 const server = Fastify()
+server.register(require('@fastify/formbody'))
+
 
 const pages = {
     homepage: new HTMLPage()
@@ -20,7 +35,8 @@ const dynamicReactPageManager = new DynamicReactPageManager(drpmWatchFilePath, "
 const HttpStatusCode = {
     Ok: 200,
     NotFound: 404,
-    InternalServerError: 500 
+    InternalServerError: 500,
+    BadRequest: 400
 }
 
 async function IsFileExisting(filepath: string): Promise<boolean> {
@@ -142,11 +158,64 @@ server.get("/fonts/*", async (request, reply) => {
     }
 })
 
+/**
+ * This checks if there's an account with the following credentials saved in 
+ * the accounts table
+ */
+async function QueryAccountInfo(username: string, password: string): Promise<boolean> {
+    let query = await FOTO_DB_CLIENT.query(
+        `SELECT EXISTS( SELECT username, password from accounts WHERE username='${username}' AND password='${password}')`
+    )
+    return Promise.resolve(query.rows[0]?.exists ?? false)
+}
+
+async function SaveSession(username: string, sessionid: string): Promise<void> {
+    await FOTO_DB_CLIENT.query(`INSERT INTO sessions (username, sessionid) VALUES (${username}, ${sessionid})`)
+}
+
+function GenerateSessionID(): string {
+    return uuidv4()
+}
+
+server.post("/log-in", async (request, reply) => {
+    let account_submission_info = (request.body as AccountSubmissionInfo)
+    const MISSING_ACCOUNT_INFO = "Missing account info"
+    
+    if (!account_submission_info?.username || !account_submission_info?.password) {
+        reply.code(HttpStatusCode.BadRequest)
+        reply.send(MISSING_ACCOUNT_INFO)
+        return
+    }
+
+    /* if account info is submitted completely */
+
+    let username = account_submission_info.username
+    let password = account_submission_info.password
+    const account_exists = await QueryAccountInfo(username, password)
+
+    if (account_exists) {
+        let session_id = GenerateSessionID()
+        await SaveSession(username, session_id)
+        reply.code(HttpStatusCode.Ok)
+        let set_cookie_value = `sessionid=${session_id}`
+        reply.header('set-cookie', set_cookie_value)
+    }
+
+    else /* if the account does not exists */ {
+        reply.code(HttpStatusCode.NotFound)
+    }
+        
+})
+
 BindPathToFile("/react", "node_modules/react/umd/react.development.js", server)
 BindPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", server)
 BindPathToFile("/react-router-dom", "node_modules/react-router-dom/dist/umd/react-router-dom.development.js", server)
 BindPathToFile("/react-router", "node_modules/react-router/dist/umd/react-router.development.js", server)
 BindPathToFile("/remix-router", "node_modules/@remix-run/router/dist/router.umd.js", server)
+
+async function InitializeFotoDbConnection() {
+    await FOTO_DB_CLIENT.connect()
+}
 
 function main() {
     InitializePages()
@@ -162,6 +231,7 @@ function main() {
                 process.exit(-1)
             }
             else {
+                InitializeFotoDbConnection()
                 console.log(`The development server is now running at http://${HOST}:${PORT}`)
             }
         }
@@ -169,7 +239,8 @@ function main() {
     )
 }
 
-process.on('SIGINT', function() {
+process.on('SIGINT', async function() {
+    await FOTO_DB_CLIENT.end()
     dynamicReactPageManager.Save()
     process.exit(0)
 })
