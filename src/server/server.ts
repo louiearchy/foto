@@ -116,7 +116,6 @@ function JSONifyCookies(cookies: string): any {
         let withSeparator = cookie_pair.indexOf("=") > 0
         if (withSeparator) {
             let splitted_cookie_pair = cookie_pair.split("=")
-            console.log(splitted_cookie_pair)
             let cookieKey = splitted_cookie_pair[0]
             let cookieValue = splitted_cookie_pair[1]
             if (cookieKey.length > 0 && cookieValue.length > 0) {
