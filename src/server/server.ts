@@ -100,9 +100,75 @@ function BindPathToFile(requestPath: string, filepath: string, server) {
     })
 }
 
+function JSONifyCookies(cookies: string): any {
+    let withMultipleCookies = cookies.indexOf(";") > 0
+    let returningObject = {}
+    let cookies_pair_list = []
+    if (withMultipleCookies) {
+        cookies_pair_list = cookies.split(";")
+    }
+    else {
+        cookies_pair_list.push(cookies)
+    }
+    for (let i = 0; i < cookies_pair_list.length; i++) 
+    {
+        let cookie_pair = cookies_pair_list[i];
+        let withSeparator = cookie_pair.indexOf("=") > 0
+        if (withSeparator) {
+            let splitted_cookie_pair = cookie_pair.split("=")
+            console.log(splitted_cookie_pair)
+            let cookieKey = splitted_cookie_pair[0]
+            let cookieValue = splitted_cookie_pair[1]
+            if (cookieKey.length > 0 && cookieValue.length > 0) {
+                Object.defineProperty(returningObject, cookieKey, {
+                    value: cookieValue,
+                    enumerable: true
+                })
+            }
+        }
+    }
+    return returningObject
+}
+
+async function IsSessionIdValid(sessionid: string): Promise<boolean> {
+    let query = await FOTO_DB_CLIENT.query(
+        `SELECT EXISTS (SELECT sessionid FROM sessions WHERE sessionid='${sessionid}')`
+    )
+    return Promise.resolve(query.rows[0]?.exists ?? false)
+}
+
 server.get("/", (request, reply) => { reply.type("text/html").send(pages.homepage.data) })
-server.get("/log-in", (request, reply) => { reply.type("text/html").send(pages.homepage.data) })
-server.get("/sign-up", (request, reply) => {reply.type("text/html").send(pages.homepage.data) })
+
+server.get("/log-in", async (request, reply) => { 
+    
+    let clientHasCookie = typeof request.headers?.cookie === "string"
+    if (clientHasCookie) {
+        let cookies = JSONifyCookies(request.headers.cookie)
+        if (cookies?.sessionid) {
+            if (await IsSessionIdValid(cookies.sessionid)) {
+                reply.redirect("/home")
+                return
+            }
+        }
+    }
+
+    reply.type("text/html").send(pages.homepage.data) 
+})
+
+server.get("/sign-up", async (request, reply) => {
+    
+    let clientHasCookie = typeof request.headers?.cookie === "string"
+    if (clientHasCookie) {
+        let cookies = JSONifyCookies(request.headers.cookie)
+        if (cookies?.sessionid) {
+            if (await IsSessionIdValid(cookies.sessionid)) {
+                reply.redirect("/home")
+                return
+            }
+        }
+    }
+    reply.type("text/html").send(pages.homepage.data) 
+})
 
 server.get("/pages/*", async (request, reply) => {
     /**
