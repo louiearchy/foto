@@ -137,7 +137,21 @@ async function IsSessionIdValid(sessionid: string): Promise<boolean> {
     return Promise.resolve(query.rows[0]?.exists ?? false)
 }
 
-server.get("/", (request, reply) => { reply.type("text/html").send(pages.homepage.data) })
+server.get("/", async (request, reply) => { 
+
+    let clientHasCookie = typeof request.headers?.cookie === "string"
+    if (clientHasCookie) {
+        let cookies = JSONifyCookies(request.headers.cookie)
+        if (cookies?.sessionid) {
+            if (await IsSessionIdValid(cookies.sessionid)) {
+                reply.redirect("/home")
+                return
+            }
+        }
+    }
+
+    reply.type("text/html").send(pages.homepage.data) 
+})
 
 server.get("/log-in", async (request, reply) => { 
     
