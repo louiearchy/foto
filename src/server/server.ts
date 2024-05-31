@@ -182,12 +182,12 @@ async function CheckUsernameIfAlreadyRegistered(username: string): Promise<boole
 
 async function RecordAccount(username: string, password: string) {
     await FOTO_DB_CLIENT.query(
-        `INSERT INTO accounts (username, password) VALUES (${username}, ${password})`
+        `INSERT INTO accounts (username, password) VALUES ('${username}', '${password}')`
     )
 }
 
 async function SaveSession(username: string, sessionid: string): Promise<void> {
-    await FOTO_DB_CLIENT.query(`INSERT INTO sessions (username, sessionid) VALUES (${username}, ${sessionid})`)
+    await FOTO_DB_CLIENT.query(`INSERT INTO sessions (username, sessionid) VALUES ('${username}', '${sessionid}')`)
 }
 
 function GenerateSessionID(): string {
