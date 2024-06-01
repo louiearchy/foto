@@ -36,7 +36,8 @@ const HttpStatusCode = {
     Ok: 200,
     NotFound: 404,
     InternalServerError: 500,
-    BadRequest: 400
+    BadRequest: 400,
+    Unauthorized: 401
 }
 
 async function IsFileExisting(filepath: string): Promise<boolean> {
@@ -259,6 +260,20 @@ async function CheckUsernameIfAlreadyRegistered(username: string): Promise<boole
     return Promise.resolve(query.rows[0]?.exists ?? true)
 }
 
+async function GetUsernameBySessionID(sessionid: string): Promise<string | undefined> {
+    let query = await FOTO_DB_CLIENT.query(
+        `SELECT username FROM sessions WHERE sessionid='${sessionid}'`
+    )
+    return Promise.resolve(query.rows[0]?.username ?? undefined)
+}
+
+async function RecordNewAlbum(username: string, albumid: string, album_name: string): Promise<void> {
+    await FOTO_DB_CLIENT.query(
+        `INSERT INTO albums (username, albumid, album_name) VALUES ('${username}', '${albumid}', '${album_name}')`
+    )
+    return Promise.resolve()
+}
+
 async function RecordAccount(username: string, password: string) {
     await FOTO_DB_CLIENT.query(
         `INSERT INTO accounts (username, password) VALUES ('${username}', '${password}')`
@@ -270,6 +285,10 @@ async function SaveSession(username: string, sessionid: string): Promise<void> {
 }
 
 function GenerateSessionID(): string {
+    return uuidv4()
+}
+
+function GenerateAlbumId(): string {
     return uuidv4()
 }
 
@@ -333,6 +352,52 @@ server.post("/sign-up", async (request, reply) => {
     reply.code(HttpStatusCode.Ok)
     reply.header('set-cookie', `sessionid=${session_id}`)
     
+})
+
+server.post("/new/album", async (request, reply) => {
+    let clientHasCookie = request.headers?.cookie ?? false
+    if (clientHasCookie) {
+        let cookies = JSONifyCookies(request.headers.cookie)
+        let withSessionId = cookies?.sessionid
+        if (withSessionId) {
+            if (await IsSessionIdValid(cookies.sessionid)) {
+                let isWithContentType = typeof request.headers?.["content-type"] === 'string'
+                let isWithContentLength = request.headers?.["content-length"] !== undefined
+                if (isWithContentLength && isWithContentType) {
+                    let contentType = request.headers["content-type"].toLowerCase()
+                    if (contentType == "text/plain") {
+                        let albumName = ""
+                        request.raw.on('data', function (chunk) {
+                            albumName += chunk
+                        })
+                        request.raw.on('end', async function () {
+                            let username = await GetUsernameBySessionID(cookies.sessionid)
+                            let albumId = GenerateAlbumId()
+                            await RecordNewAlbum(username, albumId, albumName)
+                            reply.code(HttpStatusCode.Ok)
+                            return
+                        })
+                    }
+                    else /* if the content type is not text/plain */ {
+                        reply.code(HttpStatusCode.BadRequest)
+                        return
+                    }
+                }
+                else /* if the request did not give the content-length and content-type */ {
+                    reply.code(HttpStatusCode.BadRequest)
+                    return
+                }
+            }
+            else /* if the session id is not valid */ {
+                reply.code(HttpStatusCode.BadRequest)
+                return
+            }
+        }
+        else /* without session id */ {
+            reply.code(HttpStatusCode.Unauthorized)
+            return
+        }
+    }
 })
 
 BindPathToFile("/react", "node_modules/react/umd/react.development.js", server)
