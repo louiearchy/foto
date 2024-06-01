@@ -80,6 +80,17 @@ function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
     }
 }
 
+function DeduceFileExtensionByContentType(contentType: string): string {
+    switch (contentType.toLowerCase()) {
+        case "image/jpg":
+        case "image/png":
+        case "image/webp":
+            return contentType.toLowerCase().split("/")[1]
+        default:
+            return "unknown"
+    }
+}
+
 /**
  * A helper function that takes care of the mechanisms in binding a request.path to
  * a specific file
@@ -284,11 +295,30 @@ async function SaveSession(username: string, sessionid: string): Promise<void> {
     await FOTO_DB_CLIENT.query(`INSERT INTO sessions (username, sessionid) VALUES ('${username}', '${sessionid}')`)
 }
 
+async function IsAlbumIdValid(albumid: string): Promise<boolean> {
+    let query = await FOTO_DB_CLIENT.query(`SELECT EXISTS (SELECT albumid FROM albums WHERE albumid='${albumid}')`)
+    return query.rows[0]?.exists ?? false
+}
+
+async function RecordNewPicture(username: string, albumid: string | undefined, pictureid: string ): Promise<void> {
+    albumid = (albumid) ? (`'${albumid}'`) : 'NULL'
+    let query = await FOTO_DB_CLIENT.query(
+        `
+            INSERT INTO pictures (username, albumid, pictureid) VALUES ('${username}', ${albumid}, '${pictureid}')
+        `
+    )
+    return Promise.resolve()
+}
+
 function GenerateSessionID(): string {
     return uuidv4()
 }
 
 function GenerateAlbumId(): string {
+    return uuidv4()
+}
+
+function GeneratePictureId(): string {
     return uuidv4()
 }
 
@@ -397,6 +427,77 @@ server.post("/new/album", async (request, reply) => {
             reply.code(HttpStatusCode.Unauthorized)
             return
         }
+    }
+})
+
+server.post("/albums/:id?", async (request, reply) => {
+    let clientHasCookie = request.headers?.cookie ?? false
+    if (clientHasCookie) {
+        let cookies = JSONifyCookies(request.headers.cookie)
+        let withSessionId = cookies?.sessionid
+        if (withSessionId) {
+            if (await IsSessionIdValid(cookies.sessionid)) {
+                
+                let { id } = (request.params as any)
+                let albumid = id
+                if (albumid) {
+                    let isAlbumIdInvalid = !(await IsAlbumIdValid(albumid))
+                    if (isAlbumIdInvalid) {
+                        reply.code(HttpStatusCode.BadRequest)
+                        return
+                    }
+                }
+
+
+                let requestHeadersIsIncomplete = 
+                    (!(typeof request.headers?.["content-type"] === 'string')) || 
+                    (!(typeof request.headers?.["content-length"] === 'string'))
+
+                if (requestHeadersIsIncomplete) {
+                    reply.code(HttpStatusCode.BadRequest)
+                    return
+                }
+
+                let contenttype = request.headers["content-type"]
+                let contentlength: number = parseInt(request.headers?.["content-length"])
+                let data: Buffer = Buffer.alloc(contentlength)
+                let offset = 0
+
+                request.raw.on('data', function (chunk: Buffer) {  
+                    data.fill(chunk, )
+                    offset += chunk.byteLength
+                })
+
+                request.raw.on('end', async function () {
+                    
+                    let uniqueid_for_picture = GeneratePictureId()
+                    let file_extension = DeduceFileExtensionByContentType(contenttype)
+                    let pictureid = `${uniqueid_for_picture}.${file_extension}`
+                    let filename = path.join("built/data/pics", pictureid)
+                    let username = await GetUsernameBySessionID(cookies.sessionid)
+                    await fs.writeFile(
+                        filename, data
+                    )
+                    await RecordNewPicture(username, albumid, pictureid)
+                    reply.code(HttpStatusCode.Ok)
+
+                })
+
+
+            }
+            else /* if the session id is not valid */ {
+                reply.code(HttpStatusCode.Unauthorized)
+                return
+            }
+        }
+        else /* if the client has no session id */ {
+            reply.code(HttpStatusCode.Unauthorized)
+            return
+        }
+    }
+    else /* if the client has no cookies */ {
+        reply.code(HttpStatusCode.Unauthorized)
+        return
     }
 })
 
