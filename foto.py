@@ -174,6 +174,17 @@ def SetupTablesOnDatabase():
         )
     """
     cursor.execute(create_sessions_table_cmd)
+
+
+    create_albums_table_cmd = """
+        CREATE TABLE IF NOT EXISTS albums (
+            username varchar(255) NOT NULL,
+            albumid varchar(255) NOT NULL,
+            album_name varchar(255) NOT NULL,
+            PRIMARY KEY (albumid)
+        )
+    """
+    cursor.execute(create_albums_table_cmd)
     FOTO_DATABASE_CONNECTION.commit()
 
 def CloseConnectionIfExists(connection: psycopg.Connection):
