@@ -26,7 +26,8 @@ server.register(require('@fastify/formbody'))
 
 
 const pages = {
-    homepage: new HTMLPage()
+    homepage: new HTMLPage(),
+    mainpage: new HTMLPage()
 }
 
 const drpmWatchFilePath = "built/drpm-watch-file.json"
@@ -50,6 +51,7 @@ async function IsFileExisting(filepath: string): Promise<boolean> {
 }
 
 function InitializePages() {
+
     pages.homepage.AddMetaTag({ charset: "utf-8" })
     pages.homepage.AddMetaTag({ name: "viewport", content: "width=device-width, initial-scale=1" })
     pages.homepage.AddScript("react")
@@ -60,6 +62,19 @@ function InitializePages() {
     pages.homepage.SetReactPage("pages/homepage.js")
     pages.homepage.AddStylesheet("assets/css/homepage.css")
     pages.homepage.SetTitle("foto - a cloud photo album")
+
+
+    pages.mainpage.AddMetaTag({ charset: "utf-8" })
+    pages.mainpage.AddMetaTag({ name: "viewport", content: "width=device-width, initial-scale=1" })
+    pages.mainpage.AddScript("react")
+    pages.mainpage.AddScript("react-dom")
+    pages.mainpage.AddScript("remix-router")
+    pages.mainpage.AddScript("react-router")
+    pages.mainpage.AddScript("react-router-dom")
+    pages.mainpage.SetReactPage("pages/main.js")
+    pages.mainpage.AddStylesheet("assets/css/main.css")
+    pages.mainpage.SetTitle("foto")
+
 }
 
 function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
@@ -498,6 +513,24 @@ server.post("/albums/:id?", async (request, reply) => {
     else /* if the client has no cookies */ {
         reply.code(HttpStatusCode.Unauthorized)
         return
+    }
+})
+
+server.get("/home", async function (request, reply) {
+    if (request.headers?.cookie) {
+        let cookies = JSONifyCookies(request.headers.cookie)
+        if (cookies?.sessionid) {
+            let is_sessionid_valid = await IsSessionIdValid(cookies.sessionid)
+            if (!is_sessionid_valid) {
+                reply.redirect("/")
+                return
+            }
+            reply.code(HttpStatusCode.Ok).type("text/html").send(pages.mainpage.data)  
+        }
+        else /* if no sessionid is given */ {
+            reply.redirect("/")
+            return
+        }
     }
 })
 
