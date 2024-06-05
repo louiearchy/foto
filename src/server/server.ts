@@ -412,17 +412,12 @@ server.post("/new/album", async (request, reply) => {
                 if (isWithContentLength && isWithContentType) {
                     let contentType = request.headers["content-type"].toLowerCase()
                     if (contentType == "text/plain") {
-                        let albumName = ""
-                        request.raw.on('data', function (chunk) {
-                            albumName += chunk
-                        })
-                        request.raw.on('end', async function () {
-                            let username = await GetUsernameBySessionID(cookies.sessionid)
-                            let albumId = GenerateAlbumId()
-                            await RecordNewAlbum(username, albumId, albumName)
-                            reply.code(HttpStatusCode.Ok)
-                            return
-                        })
+                        let album_name = (request.body as string)
+                        let username = await GetUsernameBySessionID(cookies.sessionid)
+                        let albumid = GenerateAlbumId()
+                        await RecordNewAlbum(username, albumid, album_name)
+                        reply.code(HttpStatusCode.Ok).send(albumid).type("text/plain")
+                        return
                     }
                     else /* if the content type is not text/plain */ {
                         reply.code(HttpStatusCode.BadRequest)
