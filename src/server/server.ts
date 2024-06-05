@@ -400,6 +400,9 @@ server.post("/sign-up", async (request, reply) => {
     
 })
 
+/**
+ * The handler for clients creating a new album
+ */
 server.post("/new/album", async (request, reply) => {
     let clientHasCookie = request.headers?.cookie ?? false
     if (clientHasCookie) {
@@ -441,6 +444,9 @@ server.post("/new/album", async (request, reply) => {
     }
 })
 
+/**
+ * The handler for clients posting a picture
+ */
 server.post("/albums/:id?", async (request, reply) => {
     let clientHasCookie = request.headers?.cookie ?? false
     if (clientHasCookie) {
