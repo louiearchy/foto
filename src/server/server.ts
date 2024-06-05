@@ -71,6 +71,7 @@ function InitializePages() {
     pages.mainpage.AddScript("remix-router")
     pages.mainpage.AddScript("react-router")
     pages.mainpage.AddScript("react-router-dom")
+    pages.mainpage.AddScript("jquery")
     pages.mainpage.SetReactPage("pages/main.js")
     pages.mainpage.AddStylesheet("assets/css/main.css")
     pages.mainpage.SetTitle("foto")
@@ -539,6 +540,7 @@ BindPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.j
 BindPathToFile("/react-router-dom", "node_modules/react-router-dom/dist/umd/react-router-dom.development.js", server)
 BindPathToFile("/react-router", "node_modules/react-router/dist/umd/react-router.development.js", server)
 BindPathToFile("/remix-router", "node_modules/@remix-run/router/dist/router.umd.js", server)
+BindPathToFile("/jquery", "node_modules/jquery/dist/jquery.js", server)
 
 async function InitializeFotoDbConnection() {
     await FOTO_DB_CLIENT.connect()

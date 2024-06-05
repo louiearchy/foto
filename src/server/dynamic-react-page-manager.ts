@@ -164,7 +164,8 @@ export default class DynamicReactPageManager {
                     currentLineSplitted.includes("react")    ||
                     currentLineSplitted.includes("react-dom/client") ||
                     currentLineSplitted.includes("ReactRouterDOM") ||
-                    currentLineSplitted.includes("react-router-dom")
+                    currentLineSplitted.includes("react-router-dom") ||
+                    currentLineSplitted.includes("jquery")
                 )
             )
             {
