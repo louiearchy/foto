@@ -121,15 +121,14 @@ button.circle {
     text-align: center;
 }
 
-.album > img {
+.album > img, .album > .album-blank-preview {
     height: 90%;
     width: 100%;
-    border: solid 1px transparent; /* border: none does not work */
     border-radius: 0.15cm 0.15cm 0 0;
     user-select: none;
 }
 
-.album > img[src=""] {
+.album > .album-blank-preview {
    background-color: #f0f0f0;
 }
 

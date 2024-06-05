@@ -62,7 +62,11 @@ const photoNAlbumManager = new PhotoNAlbumManager()
 
 function Album(props) {
     return <div className="album">
-        <img src={ props?.imgsrc ?? "" } />
+        { 
+            (props?.imgSrc) ? 
+                /* if there's an image preview available */ <img src={ (props?.imgSrc) ? props.imgSrc : "" } /> :
+                /* if there's no image */ <div className="album-blank-preview"></div>
+        }
         <button>{props?.name}</button>
     </div>
 }
