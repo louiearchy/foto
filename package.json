@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@types/jquery": "^3.5.30",
     "@types/node": "^20.12.12",
     "@types/pg": "^8.11.6",
     "@types/react": "^18.3.2",
@@ -11,6 +12,7 @@
     "@fastify/formbody": "^7.4.0",
     "@remix-run/router": "^1.16.1",
     "fastify": "^4.27.0",
+    "jquery": "^3.7.1",
     "pg": "^8.11.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
