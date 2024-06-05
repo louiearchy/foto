@@ -2,55 +2,123 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 import ReactRouterDOM from "react-router-dom"
-
+import $ from "jquery"
 
 const rootdiv = document.createElement("root")
 const root = ReactDOM.createRoot(rootdiv)
 
+
+interface AlbumEntry {
+    name: string,
+    albumid: string
+}
+
+type AlbumEntries = AlbumEntry[]
+
+class PhotoNAlbumManager {
+    protected albums: AlbumEntries
+
+    constructor() {
+        this.albums = []
+    }
+
+    protected async RegisterNewAlbum(album_name: string): Promise<string | undefined>{
+        return new Promise( (resolve, reject) => {
+            let request = $.ajax('/new/album', {
+                method: 'POST',
+                contentType: 'text/plain',
+                data: album_name,
+                dataType: 'text'
+            })
+            request.done((data) => {
+                resolve(data)
+            })
+            request.fail( (_, textstatus, error_thrown) => {
+                console.log(textstatus)
+                console.log(error_thrown)
+                reject()
+            })
+        })
+    }
+
+    public async CreateNewAlbum(album_name: string): Promise<void> {
+        let album_id = await this.RegisterNewAlbum(album_name)
+        if (album_id) {
+            this.albums.push({
+                name: album_name,
+                albumid: album_id
+            })
+        }
+        return Promise.resolve()
+    }
+
+    public GetAlbums(): AlbumEntries {
+        return this.albums
+    }
+
+}
+
+const photoNAlbumManager = new PhotoNAlbumManager()
+
 function Album(props) {
     return <div className="album">
         <img src={ props?.imgsrc ?? "" } />
-        <button>{props?.album_name}</button>
+        <button>{props?.name}</button>
     </div>
 }
 
 function AlbumView(props) {
-    return <div id="album-view" className="flex-row" onClick={props?.onClick} style={{
-        zIndex: props?.zIndex
-    }}>
+    
+    let [albumEntries, SetAlbumEntries] = React.useState<AlbumEntries>([])
+    let SetCreateAlbumPromptVisibility = props?.SetCreateAlbumPromptVisibility
 
-    </div>
-}
 
-function CreateNewAlbumPrompt(props) {
-    let [warningMsg, setWarningMsg] = React.useState("")
-    return <div className="absolute" style={{
-        zIndex: props?.zIndex
-    }} id="create-album-prompt">
-        <h2>Create Album</h2>
-        <input type="text" id="album-name-field" onInput={
-            () => {
-                if (warningMsg != "") {
-                    setWarningMsg("")
+    function CreateNewAlbumPrompt(props) {
+        let [warningMsg, setWarningMsg] = React.useState("")
+        return <div className="absolute" style={{
+            zIndex: props?.zIndex
+        }} id="create-album-prompt">
+            <h2>Create Album</h2>
+            <input type="text" id="album-name-field" onInput={
+                () => {
+                    if (warningMsg != "") {
+                        setWarningMsg("")
+                    }
                 }
-            }
-        }/>
-        <div className="flex-row">
-            <button onClick={ () => {
-                let album_name_field = (document.getElementById("album-name-field") as HTMLInputElement)
-                let album_name = album_name_field.value
-                if (album_name.length == 0) {
-                    setWarningMsg("Please input an album name first!")
-                }
-            }}>Create Album</button>
-            <button onClick={ () => props?.SetCreateAlbumPromptVisibility(false) }>Cancel</button> 
-        </div>
-        {
-            (warningMsg != "") && <div id="warning-prompt">
-                {warningMsg}
+            }/>
+            <div className="flex-row">
+                <button onClick={ async () => {
+                    let album_name_field = (document.getElementById("album-name-field") as HTMLInputElement)
+                    let album_name = album_name_field.value
+                    if (album_name.length == 0) {
+                        setWarningMsg("Please input an album name first!")
+                    }
+                    else {
+                        SetCreateAlbumPromptVisibility(false)
+                        await photoNAlbumManager.CreateNewAlbum(album_name)
+                        SetAlbumEntries(photoNAlbumManager.GetAlbums())
+                    }
+                }}>Create Album</button>
+                <button onClick={ () => SetCreateAlbumPromptVisibility(false) }>Cancel</button> 
             </div>
-        }
-    </div>
+            {
+                (warningMsg != "") && <div id="warning-prompt">
+                    {warningMsg}
+                </div>
+            }
+        </div>
+    }
+
+
+
+    return <>
+        { props?.isCreateAlbumPromptVisible && <CreateNewAlbumPrompt/> }
+        <div id="album-view" className="flex-row" onClick={props?.onClick} style={{
+            zIndex: props?.zIndex
+        }}>
+            { albumEntries.map( albumEntry => <Album name={albumEntry.name} key={albumEntry.albumid}/> )}
+        </div>
+    </>
 }
 
 function UserActionPanel(props) {
@@ -100,9 +168,12 @@ function Main() {
     let [popupPanelVisible, setPopupPanelVisibility] = React.useState(false)
 
     return <div className="flex-column container-height">
-        { isCreateAlbumPromptVisible && <CreateNewAlbumPrompt zIndex={1} 
-            SetCreateAlbumPromptVisibility={SetCreateAlbumPromptVisibility}/> }
-        <AlbumView onClick={ () => { setPopupPanelVisibility(false) }} zIndex={0}/>
+        <AlbumView 
+            onClick={ () => { setPopupPanelVisibility(false) }} 
+            zIndex={0}
+            isCreateAlbumPromptVisible={isCreateAlbumPromptVisible}
+            SetCreateAlbumPromptVisibility={SetCreateAlbumPromptVisibility}
+        />
         <UserActionPanel 
             SetCreateAlbumPromptVisibility={SetCreateAlbumPromptVisibility}
             setPopupPanelVisibility={setPopupPanelVisibility}
