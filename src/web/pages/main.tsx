@@ -15,6 +15,8 @@ interface AlbumEntry {
 
 type AlbumEntries = AlbumEntry[]
 
+const ALBUMS_LOADED_EVENT = new Event('ALBUMS_LOADED_EVENT')
+
 class PhotoNAlbumManager {
 
     public albums: AlbumEntries
@@ -45,13 +47,14 @@ class PhotoNAlbumManager {
         })
     }
 
-    public async GetAlbumsFromServer() {
+    public GetAlbumsFromServer() {
         let request = $.ajax('/albums', {
             method: 'GET',
             dataType: 'json'
         })
         request.done((data) => {
             this.albums = (data as AlbumEntries)
+            document.dispatchEvent(ALBUMS_LOADED_EVENT)
         })
         request.fail( (textstatus, error_thrown) => {
             console.log(textstatus)
@@ -89,14 +92,24 @@ function Album(props) {
     </div>
 }
 
+let already_sent_albums_request = false
+
 function AlbumView(props) {
     
     let [albumEntries, SetAlbumEntries] = React.useState<AlbumEntries>([])
     let SetCreateAlbumPromptVisibility = props?.SetCreateAlbumPromptVisibility
 
-    React.useEffect(() => {
-        SetAlbumEntries(photoNAlbumManager.albums)
-    }, [photoNAlbumManager.albums])
+    React.useEffect( () => {
+        function updateAlbumEntries() {
+            SetAlbumEntries([...photoNAlbumManager.albums])
+        }
+        document.addEventListener('ALBUMS_LOADED_EVENT', updateAlbumEntries)
+        if (!already_sent_albums_request) {
+            photoNAlbumManager.GetAlbumsFromServer()
+            already_sent_albums_request = true
+        }
+        return () => document.removeEventListener('ALBUMS_LOADED_EVENT', updateAlbumEntries)
+    })
 
     function CreateNewAlbumPrompt(props) {
         let [warningMsg, setWarningMsg] = React.useState("")
@@ -121,7 +134,12 @@ function AlbumView(props) {
                     else {
                         SetCreateAlbumPromptVisibility(false)
                         await photoNAlbumManager.CreateNewAlbum(album_name)
-                        SetAlbumEntries(photoNAlbumManager.albums)
+                        SetAlbumEntries(
+                            /* 
+                                we create a shallow copy of the photoNAlbumManager.albums
+                            */
+                            [...photoNAlbumManager.albums]
+                        )
                     }
                 }}>Create Album</button>
                 <button onClick={ () => SetCreateAlbumPromptVisibility(false) }>Cancel</button> 
@@ -214,8 +232,6 @@ const router = ReactRouterDOM.createBrowserRouter([
         element: <Main/>
     }
 ])
-
-photoNAlbumManager.GetAlbumsFromServer()
 
 window.onload = function() {
     document.body.appendChild(rootdiv)
