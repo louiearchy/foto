@@ -96,7 +96,7 @@ let already_sent_albums_request = false
 
 function AlbumView(props) {
     
-    let [albumEntries, SetAlbumEntries] = React.useState<AlbumEntries>([])
+    let [albumEntries, SetAlbumEntries] = React.useState<AlbumEntries>([...photoNAlbumManager.albums])
     let SetCreateAlbumPromptVisibility = props?.SetCreateAlbumPromptVisibility
 
     React.useEffect( () => {
