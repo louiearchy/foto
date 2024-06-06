@@ -573,6 +573,43 @@ server.get("/home", async function (request, reply) {
     }
 })
 
+/*
+    Serving the album page
+*/
+server.get("/album/:albumid", async function (request, reply) {
+    
+    let { albumid } = request.params as any
+
+    if (!albumid) {
+        reply.code(HttpStatusCode.BadRequest).redirect("/home")
+        return
+    }
+
+    if (!request.headers?.cookie) {        
+        reply.code(HttpStatusCode.Unauthorized).redirect("/")
+        return
+    }
+
+    let cookies = JSONifyCookies(request.headers.cookie)
+
+    if (!cookies?.sessionid) {
+        reply.code(HttpStatusCode.Unauthorized).redirect("/")
+        return
+    }
+
+    let is_sessionid_not_valid = !(await IsSessionIdValid(cookies.sessionid))
+
+    if (is_sessionid_not_valid) {
+        reply.code(HttpStatusCode.Unauthorized).redirect("/")
+        return
+    }
+
+    reply.code(HttpStatusCode.Ok).send(pages.mainpage.data)
+    return
+
+
+})
+
 BindPathToFile("/react", "node_modules/react/umd/react.development.js", server)
 BindPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", server)
 BindPathToFile("/react-router-dom", "node_modules/react-router-dom/dist/umd/react-router-dom.development.js", server)
