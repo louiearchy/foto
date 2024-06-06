@@ -88,7 +88,7 @@ function Album(props) {
                 /* if there's an image preview available */ <img src={ (props?.imgSrc) ? props.imgSrc : "" } /> :
                 /* if there's no image */ <div className="album-blank-preview"></div>
         }
-        <button>{props?.name}</button>
+        <ReactRouterDOM.Link to={props?.link}>{props?.name}</ReactRouterDOM.Link>
     </div>
 }
 
@@ -159,7 +159,14 @@ function AlbumView(props) {
         <div id="album-view" className="flex-row" onClick={props?.onClick} style={{
             zIndex: props?.zIndex
         }}>
-            { albumEntries.map( albumEntry => <Album name={albumEntry.album_name} key={albumEntry.albumid}/> )}
+            { albumEntries.map( (albumEntry) => {
+                let albumlink = `/album/${albumEntry.albumid}`
+                return <Album 
+                    name={albumEntry.album_name} 
+                    key={albumEntry.albumid}
+                    link={albumlink}
+                /> 
+            })}
         </div>
     </>
 }
@@ -226,10 +233,20 @@ function Main() {
     </div>
 }
 
+function SpecificAlbumView() {
+    return <div>
+        
+    </div>
+}
+
 const router = ReactRouterDOM.createBrowserRouter([
     {
         path: "/home",
         element: <Main/>
+    },
+    {
+        path: "/album/:id",
+        element: <SpecificAlbumView/>
     }
 ])
 
