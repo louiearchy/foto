@@ -9,17 +9,20 @@ const root = ReactDOM.createRoot(rootdiv)
 
 
 interface AlbumEntry {
-    name: string,
+    album_name: string,
     albumid: string
 }
 
 type AlbumEntries = AlbumEntry[]
 
 class PhotoNAlbumManager {
-    protected albums: AlbumEntries
+
+    public albums: AlbumEntries
+    protected alreadySuccessfullyRequestedAlbums: boolean
 
     constructor() {
         this.albums = []
+        this.alreadySuccessfullyRequestedAlbums = false
     }
 
     protected async RegisterNewAlbum(album_name: string): Promise<string | undefined>{
@@ -31,6 +34,7 @@ class PhotoNAlbumManager {
                 dataType: 'text'
             })
             request.done((data) => {
+                this.alreadySuccessfullyRequestedAlbums = true
                 resolve(data)
             })
             request.fail( (_, textstatus, error_thrown) => {
@@ -41,19 +45,33 @@ class PhotoNAlbumManager {
         })
     }
 
+    public async GetAlbumsFromServer() {
+        let request = $.ajax('/albums', {
+            method: 'GET',
+            dataType: 'json'
+        })
+        request.done((data) => {
+            this.albums = (data as AlbumEntries)
+        })
+        request.fail( (textstatus, error_thrown) => {
+            console.log(textstatus)
+            console.log(error_thrown)
+        })
+    }
+
+    public isAlreadyRequestedAlbumsFromServer(): boolean {
+        return this.alreadySuccessfullyRequestedAlbums
+    }
+
     public async CreateNewAlbum(album_name: string): Promise<void> {
         let album_id = await this.RegisterNewAlbum(album_name)
         if (album_id) {
             this.albums.push({
-                name: album_name,
+                album_name: album_name,
                 albumid: album_id
             })
         }
         return Promise.resolve()
-    }
-
-    public GetAlbums(): AlbumEntries {
-        return this.albums
     }
 
 }
@@ -76,6 +94,9 @@ function AlbumView(props) {
     let [albumEntries, SetAlbumEntries] = React.useState<AlbumEntries>([])
     let SetCreateAlbumPromptVisibility = props?.SetCreateAlbumPromptVisibility
 
+    React.useEffect(() => {
+        SetAlbumEntries(photoNAlbumManager.albums)
+    }, [photoNAlbumManager.albums])
 
     function CreateNewAlbumPrompt(props) {
         let [warningMsg, setWarningMsg] = React.useState("")
@@ -100,7 +121,7 @@ function AlbumView(props) {
                     else {
                         SetCreateAlbumPromptVisibility(false)
                         await photoNAlbumManager.CreateNewAlbum(album_name)
-                        SetAlbumEntries(photoNAlbumManager.GetAlbums())
+                        SetAlbumEntries(photoNAlbumManager.albums)
                     }
                 }}>Create Album</button>
                 <button onClick={ () => SetCreateAlbumPromptVisibility(false) }>Cancel</button> 
@@ -120,7 +141,7 @@ function AlbumView(props) {
         <div id="album-view" className="flex-row" onClick={props?.onClick} style={{
             zIndex: props?.zIndex
         }}>
-            { albumEntries.map( albumEntry => <Album name={albumEntry.name} key={albumEntry.albumid}/> )}
+            { albumEntries.map( albumEntry => <Album name={albumEntry.album_name} key={albumEntry.albumid}/> )}
         </div>
     </>
 }
@@ -193,6 +214,8 @@ const router = ReactRouterDOM.createBrowserRouter([
         element: <Main/>
     }
 ])
+
+photoNAlbumManager.GetAlbumsFromServer()
 
 window.onload = function() {
     document.body.appendChild(rootdiv)
