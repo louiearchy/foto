@@ -16,6 +16,13 @@ const FOTO_DB_CONNECTION_CONFIG = {
 }
 const FOTO_DB_CLIENT = new pg.Client(FOTO_DB_CONNECTION_CONFIG)
 
+interface AlbumEntry {
+    album_name: string,
+    albumid: string
+}
+
+type AlbumEntries = AlbumEntry[]
+
 interface AccountSubmissionInfo {
     username?: string,
     password?: string
@@ -326,6 +333,11 @@ async function RecordNewPicture(username: string, albumid: string | undefined, p
     return Promise.resolve()
 }
 
+async function GetAlbums(username: string): Promise<AlbumEntries> {
+    let query = await FOTO_DB_CLIENT.query(`SELECT album_name, albumid FROM albums WHERE username='${username}'`)
+    return (query.rows as AlbumEntries)
+}
+
 function GenerateSessionID(): string {
     return uuidv4()
 }
@@ -515,6 +527,31 @@ server.post("/albums/:id?", async (request, reply) => {
     else /* if the client has no cookies */ {
         reply.code(HttpStatusCode.Unauthorized)
         return
+    }
+})
+
+server.get("/albums", async function (request, reply) {
+    if (request.headers?.cookie) {
+        let cookies = JSONifyCookies(request.headers.cookie)
+        if (cookies?.sessionid) {
+            let is_sessionid_valid = await IsSessionIdValid(cookies.sessionid)
+            if (!is_sessionid_valid) {
+                reply.code(HttpStatusCode.Unauthorized)
+                return
+            }
+            /* if the sessionid is valid */
+            let username = await GetUsernameBySessionID(cookies.sessionid)
+            let albums = await GetAlbums(username)
+            reply.code(HttpStatusCode.Ok).send(albums).type("application/json")
+            return
+        }
+        else /* if there is no sessionid */ {
+            reply.code(HttpStatusCode.Unauthorized)
+            return
+        }
+    }
+    else /* if there is no cookie */ {
+        reply.code(HttpStatusCode.Unauthorized)
     }
 })
 
