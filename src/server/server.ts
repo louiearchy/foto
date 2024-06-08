@@ -604,7 +604,7 @@ server.get("/album/:albumid", async function (request, reply) {
         return
     }
 
-    reply.code(HttpStatusCode.Ok).send(pages.mainpage.data)
+    reply.code(HttpStatusCode.Ok).type("text/html").send(pages.mainpage.data)
     return
 
 
