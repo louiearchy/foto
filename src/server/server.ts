@@ -338,6 +338,11 @@ async function GetAlbums(username: string): Promise<AlbumEntries> {
     return (query.rows as AlbumEntries)
 }
 
+async function GetAlbumNameByItsAlbumID(albumid: string): Promise<string> {
+    let query = await FOTO_DB_CLIENT.query(`SELECT album_name FROM albums WHERE albumid='${albumid}'`)
+    return (query.rows[0]?.album_name)
+}
+
 function GenerateSessionID(): string {
     return uuidv4()
 }
@@ -607,6 +612,40 @@ server.get("/album/:albumid", async function (request, reply) {
     reply.code(HttpStatusCode.Ok).type("text/html").send(pages.mainpage.data)
     return
 
+
+})
+
+server.get("/album/name/:albumid", async function (request, reply) {
+
+    let { albumid } = (request.params as any)
+
+    if (!albumid) {
+        reply.code(HttpStatusCode.BadRequest)
+        return
+    }
+
+    if (!request.headers?.cookie) {
+        reply.code(HttpStatusCode.Unauthorized)
+        return
+    }
+
+    let cookies = JSONifyCookies(request.headers.cookie)
+
+    if (!cookies.sessionid) {
+        reply.code(HttpStatusCode.Unauthorized)
+        return
+    }
+
+    let sessionid_is_not_valid = !(await IsSessionIdValid(cookies.sessionid))
+
+    if (sessionid_is_not_valid) {
+        reply.code(HttpStatusCode.Unauthorized)
+        return
+    }
+
+    let album_name = await GetAlbumNameByItsAlbumID(albumid)
+    reply.code(HttpStatusCode.Ok).type("text/plain").send(album_name)
+    return
 
 })
 

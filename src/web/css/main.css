@@ -209,3 +209,8 @@ button.circle {
     padding: 0.3cm 0.6cm;
     box-sizing: border-box;
 }
+
+#to-homepage-arrow > img {
+    height: 1cm;
+    width: 1cm;
+}

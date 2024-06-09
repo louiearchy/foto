@@ -13,6 +13,32 @@ interface AlbumEntry {
     albumid: string
 }
 
+const ALBUM_NAME_RECEIVED_EVENT = new Event('ALBUM_NAME_RECEIVED_EVENT')
+
+interface CurrentSessionValues {
+    viewed_album?: string
+}
+
+let current_session_values: CurrentSessionValues = {
+    viewed_album: undefined
+}
+
+function GetAlbumNameFromServer() {
+    let album_id = window.location.pathname.split("/")[2]
+    let is_viewing_specific_album = /\/album\//.test(window.location.pathname)
+
+    if (is_viewing_specific_album) {
+        $.get(`/album/name/${album_id}`, function( data ) {
+            current_session_values.viewed_album = data
+            document.dispatchEvent(ALBUM_NAME_RECEIVED_EVENT)
+        })
+    }
+}
+
+function ClearCurrentViewedAlbum() {
+    current_session_values.viewed_album = undefined
+}
+
 type AlbumEntries = AlbumEntry[]
 
 const ALBUMS_LOADED_EVENT = new Event('ALBUMS_LOADED_EVENT')
@@ -88,7 +114,13 @@ function Album(props) {
                 /* if there's an image preview available */ <img src={ (props?.imgSrc) ? props.imgSrc : "" } /> :
                 /* if there's no image */ <div className="album-blank-preview"></div>
         }
-        <ReactRouterDOM.Link to={props?.link}>{props?.name}</ReactRouterDOM.Link>
+        <ReactRouterDOM.Link 
+            to={props?.link}
+            onClick={ () => {
+                current_session_values.viewed_album = props?.name
+            }
+            }
+        >{props?.name}</ReactRouterDOM.Link>
     </div>
 }
 
@@ -233,9 +265,68 @@ function Main() {
     </div>
 }
 
+let already_sent_album_name_request = false
+
+function SpecificAlbumViewNavigationBar() {
+    let [albumName, setAlbumName] = React.useState(current_session_values?.viewed_album ?? "")
+
+    React.useEffect( () => {
+        function updateAlbumName() {
+            setAlbumName(current_session_values?.viewed_album ?? "")
+        }
+        document.addEventListener('ALBUM_NAME_RECEIVED_EVENT', updateAlbumName)
+        if (!already_sent_album_name_request) {
+            GetAlbumNameFromServer()
+            already_sent_album_name_request = true
+        }
+        return () => document.removeEventListener('ALBUM_NAME_RECEIVED_EVENT', updateAlbumName)
+    }, [albumName])
+
+
+    return <div style={{
+        padding: "0.2cm 0.5cm",
+        height: "10%",
+        maxHeight: "1cm"
+    }} className="flex-row">
+        <div style={
+            {
+                width: "10%"
+            }
+        }>
+            <ReactRouterDOM.Link 
+                to={"/home"} 
+                id="to-homepage-arrow" 
+                onClick={ () => ClearCurrentViewedAlbum() }>
+                <img src="/assets/svgs/arrow-sm-left-svgrepo-com.svg"/>
+            </ReactRouterDOM.Link>
+        </div>
+        <div style={{
+            width: "80%"
+        }} className="flex center">
+        <span style={{
+            fontFamily: 'Work Sans',
+            fontSize: '1.3em'
+        }}>{albumName}</span>
+        </div>
+        <div style={{
+            width: "10%"
+        }}></div>
+    </div>
+}
+
+function PhotosView() {
+    return <div style={{
+        height: "100%",
+        width: "100%"
+    }}></div>
+}
+
 function SpecificAlbumView() {
-    return <div>
-        
+    return <div className="flex-column" style={{
+        height: "100vh"
+    }}>
+        <SpecificAlbumViewNavigationBar/>
+        <PhotosView/>
     </div>
 }
 
@@ -250,11 +341,13 @@ const router = ReactRouterDOM.createBrowserRouter([
     }
 ])
 
-window.onload = function() {
+document.addEventListener('DOMContentLoaded', function() {
+
     document.body.appendChild(rootdiv)
     root.render(
         <React.StrictMode>
             <ReactRouterDOM.RouterProvider router={router}/>
         </React.StrictMode>
     )
-}
+
+}) 
