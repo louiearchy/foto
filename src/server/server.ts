@@ -6,6 +6,8 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import pg from "pg"
 import { v4 as uuidv4 } from "uuid"
+import { Buffer } from "node:buffer"
+import fsNonPromise from "node:fs"
 
 const PORT = 3000
 const HOST = "localhost"
@@ -15,6 +17,7 @@ const FOTO_DB_CONNECTION_CONFIG = {
     database: 'fotodb'
 }
 const FOTO_DB_CLIENT = new pg.Client(FOTO_DB_CONNECTION_CONFIG)
+const REQUEST_LENGTH_MEMORY_LIMIT = 1024 * 1024 // 1 MB
 
 interface AlbumEntry {
     album_name: string,
@@ -31,6 +34,56 @@ interface AccountSubmissionInfo {
 const server = Fastify()
 server.register(require('@fastify/formbody'))
 
+class PhotoUploadSession {
+    
+    private photo_session_token: string
+    private filepath: string
+    private expected_content_length: number
+    private current_content_length: number
+    private file_write_stream: fsNonPromise.WriteStream
+    private image_mime_type: string
+    
+    constructor(
+        photo_session_token: string, 
+        image_mime_type: string,
+        expected_content_length: number
+    ) {
+        this.photo_session_token = photo_session_token
+        this.image_mime_type = image_mime_type
+        this.expected_content_length = expected_content_length
+        this.current_content_length = 0
+        this.filepath = `built\\${this.photo_session_token}.${image_mime_type}`
+        this.file_write_stream = fsNonPromise.createWriteStream(this.filepath)
+    }
+
+    // This checks if the given content length, when added,
+    // will exceed the expected content length as given
+    public willOverload(content_length: number): boolean {
+        return this.current_content_length + content_length > this.expected_content_length
+    }
+
+    // This checks if the given content length, when added,
+    // will complete the expected content length as given
+    public willBeCompleted(content_length: number): boolean {
+        return this.current_content_length + content_length == this.expected_content_length
+    }
+
+    public getToken(): string {
+        return this.photo_session_token
+    }
+
+    public async write(data: Buffer): Promise<void> {
+        return new Promise( (resolve, reject) => {
+            this.file_write_stream.write(data)
+            resolve()
+        })
+    }
+
+    public close() {
+        this.file_write_stream.close()
+    }
+
+}
 
 const pages = {
     homepage: new HTMLPage(),
@@ -41,11 +94,14 @@ const drpmWatchFilePath = "built/drpm-watch-file.json"
 const dynamicReactPageManager = new DynamicReactPageManager(drpmWatchFilePath, "built/web/pages/")
 
 const HttpStatusCode = {
+    Continue: 100,
     Ok: 200,
     NotFound: 404,
     InternalServerError: 500,
     BadRequest: 400,
-    Unauthorized: 401
+    Unauthorized: 401,
+    RequestTimeout: 408,
+    Conflict: 409
 }
 
 async function IsFileExisting(filepath: string): Promise<boolean> {
@@ -461,76 +517,62 @@ server.post("/new/album", async (request, reply) => {
     }
 })
 
+function GeneratePhotoSessionToken(): string {
+    return uuidv4()
+}
+
+enum ImageUploadingHandlingReportStatus {
+    MissingAuthorization,
+    Successful
+}
+
+interface ImageUploadingHandlingReport {
+    status?: ImageUploadingHandlingReportStatus,
+    filepath?: string
+}
+
+// For file upload, closely related to /to/album/:id? POST request handler
+server.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function (request, payload, done) {
+    if (/\/to\/album\//.test(request.url)) {
+        
+        let missing_cookies = request.headers?.cookie === undefined
+        let body: ImageUploadingHandlingReport = {}
+        
+        if (missing_cookies) {
+            body.status = ImageUploadingHandlingReportStatus.MissingAuthorization
+            done(null, body)
+            return
+        }
+
+        let filepath = `built/${GeneratePhotoSessionToken()}.${DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")}`
+        let file_write_stream = fsNonPromise.createWriteStream(filepath)
+        
+        payload.on('data', function (chunk: Buffer) {
+            file_write_stream.write(chunk)
+        })
+
+        payload.on('end', function () {
+            file_write_stream.close()
+            body.status = ImageUploadingHandlingReportStatus.Successful 
+            body.filepath = filepath
+            done(null, body)
+            return
+        })
+
+    }
+})
+
 /**
  * The handler for clients posting a picture
  */
-server.post("/albums/:id?", async (request, reply) => {
-    let clientHasCookie = request.headers?.cookie ?? false
-    if (clientHasCookie) {
-        let cookies = JSONifyCookies(request.headers.cookie)
-        let withSessionId = cookies?.sessionid
-        if (withSessionId) {
-            if (await IsSessionIdValid(cookies.sessionid)) {
-                
-                let { id } = (request.params as any)
-                let albumid = id
-                if (albumid) {
-                    let isAlbumIdInvalid = !(await IsAlbumIdValid(albumid))
-                    if (isAlbumIdInvalid) {
-                        reply.code(HttpStatusCode.BadRequest)
-                        return
-                    }
-                }
-
-
-                let requestHeadersIsIncomplete = 
-                    (!(typeof request.headers?.["content-type"] === 'string')) || 
-                    (!(typeof request.headers?.["content-length"] === 'string'))
-
-                if (requestHeadersIsIncomplete) {
-                    reply.code(HttpStatusCode.BadRequest)
-                    return
-                }
-
-                let contenttype = request.headers["content-type"]
-                let contentlength: number = parseInt(request.headers?.["content-length"])
-                let data: Buffer = Buffer.alloc(contentlength)
-                let offset = 0
-
-                request.raw.on('data', function (chunk: Buffer) {  
-                    data.fill(chunk, )
-                    offset += chunk.byteLength
-                })
-
-                request.raw.on('end', async function () {
-                    
-                    let uniqueid_for_picture = GeneratePictureId()
-                    let file_extension = DeduceFileExtensionByContentType(contenttype)
-                    let pictureid = `${uniqueid_for_picture}.${file_extension}`
-                    let filename = path.join("built/data/pics", pictureid)
-                    let username = await GetUsernameBySessionID(cookies.sessionid)
-                    await fs.writeFile(
-                        filename, data
-                    )
-                    await RecordNewPicture(username, albumid, pictureid)
-                    reply.code(HttpStatusCode.Ok)
-
-                })
-
-
-            }
-            else /* if the session id is not valid */ {
-                reply.code(HttpStatusCode.Unauthorized)
-                return
-            }
-        }
-        else /* if the client has no session id */ {
-            reply.code(HttpStatusCode.Unauthorized)
-            return
-        }
-    }
-    else /* if the client has no cookies */ {
+server.post("/to/album/:id?", async (request, reply) => {
+    let body = (request.body as ImageUploadingHandlingReport)
+    if (body?.status == ImageUploadingHandlingReportStatus.MissingAuthorization) {
         reply.code(HttpStatusCode.Unauthorized)
+        return
+    }
+    if (body.status == ImageUploadingHandlingReportStatus.Successful) {
+        reply.code(HttpStatusCode.Ok)
         return
     }
 })

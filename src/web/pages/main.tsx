@@ -39,6 +39,65 @@ function ClearCurrentViewedAlbum() {
     current_session_values.viewed_album = undefined
 }
 
+function DeduceMimeTypeByFileExtension(filepath: string): string {
+    let file_extension = filepath.split(".").reverse()[0].toLowerCase()
+    switch (file_extension) {
+        case "jpg":
+        case "jpeg":
+            return 'image/jpg'
+        case 'png':
+        case 'webp':
+            return `image/${file_extension}`
+        default:
+            return 'unknown'
+    }
+}
+
+function SendPhotoUploadSession(file: File): Promise<string | undefined> {
+    return new Promise( async ( resolve, reject ) => { 
+        let file_data = await file.arrayBuffer()
+        let filesize = file_data.byteLength
+        let xhr = new XMLHttpRequest()
+        xhr.onreadystatechange = function(event) {
+            if (xhr.readyState == 4 ) {
+                if (xhr.response == 100 /* Continue */) {
+                    resolve(xhr.responseText)
+                }
+                else {
+                    resolve(undefined)
+                }
+            }
+        }
+        xhr.open('POST', `/to${window.location.pathname}`)
+        xhr.setRequestHeader('Content-Type', DeduceMimeTypeByFileExtension(file.name))
+        xhr.send(file_data)
+    })
+}
+
+async function UploadPhoto(file?: File) {
+    if (file) {
+        let ready_to_go = await SendPhotoUploadSession(file)
+        console.log(ready_to_go)
+    }
+}
+
+function UploadPhotos(submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>) {
+    submission_buttons_disabled_setter(true)
+    let files_to_be_uploaded = (document.getElementById('file-upload-input') as (HTMLInputElement | null))?.files
+    
+    if (files_to_be_uploaded) {
+        if (files_to_be_uploaded.length == 0)  {
+            alert('No files yet to be uploaded, please choose first!')
+            submission_buttons_disabled_setter(false)
+            return
+        }
+        else /* if there are files to be uploaded */ {
+            UploadPhoto(files_to_be_uploaded.item(0) ?? undefined)
+        }
+    }
+
+}
+
 type AlbumEntries = AlbumEntry[]
 
 const ALBUMS_LOADED_EVENT = new Event('ALBUMS_LOADED_EVENT')
@@ -315,10 +374,31 @@ function SpecificAlbumViewNavigationBar() {
 }
 
 function PhotosView() {
+    let [submissionButtonsDisabledValue, setSubmissionButtonsDisabledValue] = React.useState(false)
+
     return <div style={{
         height: "100%",
         width: "100%"
-    }}></div>
+    }} className="flex-column">
+        <div style={{
+            height: "90%"
+        }}></div>
+        <div className="flex center" style={{
+            width: "100%",
+            height: "10%",
+            maxHeight: "1cm",
+        }}>
+            <input 
+                type="file" 
+                id="file-upload-input" 
+                accept="image/webp, image/png, image/jpeg" 
+                multiple
+                disabled={submissionButtonsDisabledValue} />
+            <button onClick={() => {
+                UploadPhotos(setSubmissionButtonsDisabledValue)
+            }} disabled={submissionButtonsDisabledValue}>Submit</button>
+        </div>
+    </div>
 }
 
 function SpecificAlbumView() {
