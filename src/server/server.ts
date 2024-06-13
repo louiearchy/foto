@@ -8,8 +8,10 @@ import { v4 as uuidv4 } from 'uuid'
 
 import DatabaseQueries from './database-queries'
 import DynamicReactPageManager from './dynamic-react-page-manager'
-import HTMLPage from './dynamic-html'
+import HtmlTemplatePages from './html/template-pages'
+import JSONifyCookies from './utility/jsonify-cookies'
 
+import HomepageRouteHandler from './route-handlers/homepage'
 
 // ENUMS
 
@@ -36,10 +38,6 @@ interface ImageUploadingHandlingReport {
 
 const SERVER_HOST = 'localhost'
 const SERVER_PORT = 3000
-const HTML_TEMPLATE_PAGES = {
-    homepage: new HTMLPage(),
-    mainpage: new HTMLPage()
-}
 
 const SERVER = Fastify()
 SERVER.register(require('@fastify/formbody'))
@@ -129,83 +127,9 @@ function BindPathToFile(request_path: string, filepath: string, server) {
     })
 }
 
-function JSONifyCookies(cookies: string): any {
-
-    let cookies_are_many = cookies.indexOf(";") > 0
-    let returning_json_object = {}
-    let cookie_list: string[] = []
-
-    if (cookies_are_many) {
-        cookie_list = cookies.split(";")
-    }
-    else {
-        cookie_list.push(cookies)
-    }
-
-    cookie_list.map( (current_cookie) => {
-        let cookie_has_separator = current_cookie.indexOf("=") > 0
-        if (cookie_has_separator) {
-            let splitted_cookie_by_separator = current_cookie.split("=")
-            let cookie_key = splitted_cookie_by_separator[0]
-            let cookie_value = splitted_cookie_by_separator[1]
-            if (cookie_key.length > 0 && cookie_value.length > 0) {
-                Object.defineProperty(returning_json_object, cookie_key, {
-                    value: cookie_value,
-                    enumerable: true
-                })
-            }
-        }
-    })
-
-    return returning_json_object
-}
-
-SERVER.get("/", async (request, reply) => { 
-
-    let client_has_cookie = typeof request.headers?.cookie === "string"
-    if (client_has_cookie) {
-        let cookies = JSONifyCookies(request.headers.cookie)
-        if (cookies?.sessionid) {
-            if (await DatabaseQueries.IsSessionIdValid(cookies.sessionid)) {
-                reply.redirect("/home")
-                return
-            }
-        }
-    }
-
-    reply.type("text/html").send(HTML_TEMPLATE_PAGES.homepage.data) 
-})
-
-SERVER.get("/log-in", async (request, reply) => { 
-    
-    let client_has_cookie = typeof request.headers?.cookie === "string"
-    if (client_has_cookie) {
-        let cookies = JSONifyCookies(request.headers.cookie)
-        if (cookies?.sessionid) {
-            if (await DatabaseQueries.IsSessionIdValid(cookies.sessionid)) {
-                reply.redirect("/home")
-                return
-            }
-        }
-    }
-
-    reply.type("text/html").send(HTML_TEMPLATE_PAGES.homepage.data) 
-})
-
-SERVER.get("/sign-up", async (request, reply) => {
-    
-    let client_has_cookie = typeof request.headers?.cookie === "string"
-    if (client_has_cookie) {
-        let cookies = JSONifyCookies(request.headers.cookie)
-        if (cookies?.sessionid) {
-            if (await DatabaseQueries.IsSessionIdValid(cookies.sessionid)) {
-                reply.redirect("/home")
-                return
-            }
-        }
-    }
-    reply.type("text/html").send(HTML_TEMPLATE_PAGES.homepage.data) 
-})
+SERVER.get("/", HomepageRouteHandler)
+SERVER.get("/log-in", HomepageRouteHandler)
+SERVER.get("/sign-up", HomepageRouteHandler)
 
 SERVER.get("/pages/*", async (request, reply) => {
     /**
@@ -475,7 +399,7 @@ SERVER.get("/home", async function (request, reply) {
                 reply.redirect("/")
                 return
             }
-            reply.code(HTTPSTATUSCODE.Ok).type("text/html").send(HTML_TEMPLATE_PAGES.mainpage.data)  
+            reply.code(HTTPSTATUSCODE.Ok).type("text/html").send(HtmlTemplatePages.mainpage.data)  
         }
         else /* if no sessionid is given */ {
             reply.redirect("/")
@@ -515,7 +439,7 @@ SERVER.get("/album/:albumid", async function (request, reply) {
         return
     }
 
-    reply.code(HTTPSTATUSCODE.Ok).type("text/html").send(HTML_TEMPLATE_PAGES.mainpage.data)
+    reply.code(HTTPSTATUSCODE.Ok).type("text/html").send(HtmlTemplatePages.mainpage.data)
     return
 
 
@@ -562,39 +486,7 @@ BindPathToFile("/react-router", "node_modules/react-router/dist/umd/react-router
 BindPathToFile("/remix-router", "node_modules/@remix-run/router/dist/router.umd.js", SERVER)
 BindPathToFile("/jquery", "node_modules/jquery/dist/jquery.js", SERVER)
 
-function AddGeneralMetaTags(template_page: HTMLPage) {
-    template_page.AddMetaTag({ charset: 'utf-8' })
-    template_page.AddMetaTag({ name: 'viewport', content: 'width=device-width, initial-scale=1' })
-}
-
-function InjectReactResourceFiles(template_page: HTMLPage) {
-    template_page.AddScript('/react')
-    template_page.AddScript('/react-dom')
-    template_page.AddScript('/remix-router')
-    template_page.AddScript('/react-router')
-    template_page.AddScript('/react-router-dom')
-}
-
-function InitializeHtmlTemplatePages() {
-
-    AddGeneralMetaTags(HTML_TEMPLATE_PAGES.homepage)
-    InjectReactResourceFiles(HTML_TEMPLATE_PAGES.homepage)
-    HTML_TEMPLATE_PAGES.homepage.SetReactPage('/pages/homepage.js')
-    HTML_TEMPLATE_PAGES.homepage.AddStylesheet('/assets/css/homepage.css')
-    HTML_TEMPLATE_PAGES.homepage.SetTitle('foto - a cloud photo album')
-
-
-    AddGeneralMetaTags(HTML_TEMPLATE_PAGES.homepage)
-    InjectReactResourceFiles(HTML_TEMPLATE_PAGES.mainpage)
-    HTML_TEMPLATE_PAGES.mainpage.AddScript('/jquery')
-    HTML_TEMPLATE_PAGES.mainpage.SetReactPage('/pages/main.js')
-    HTML_TEMPLATE_PAGES.mainpage.AddStylesheet('/assets/css/main.css')
-    HTML_TEMPLATE_PAGES.mainpage.SetTitle('foto')
-
-}
-
 function main() {
-    InitializeHtmlTemplatePages()
     SERVER.listen(
     
         /* server options */
