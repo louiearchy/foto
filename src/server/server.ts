@@ -17,7 +17,6 @@ const FOTO_DB_CONNECTION_CONFIG = {
     database: 'fotodb'
 }
 const FOTO_DB_CLIENT = new pg.Client(FOTO_DB_CONNECTION_CONFIG)
-const REQUEST_LENGTH_MEMORY_LIMIT = 1024 * 1024 // 1 MB
 
 interface AlbumEntry {
     album_name: string,
@@ -33,57 +32,6 @@ interface AccountSubmissionInfo {
 
 const server = Fastify()
 server.register(require('@fastify/formbody'))
-
-class PhotoUploadSession {
-    
-    private photo_session_token: string
-    private filepath: string
-    private expected_content_length: number
-    private current_content_length: number
-    private file_write_stream: fsNonPromise.WriteStream
-    private image_mime_type: string
-    
-    constructor(
-        photo_session_token: string, 
-        image_mime_type: string,
-        expected_content_length: number
-    ) {
-        this.photo_session_token = photo_session_token
-        this.image_mime_type = image_mime_type
-        this.expected_content_length = expected_content_length
-        this.current_content_length = 0
-        this.filepath = `built\\${this.photo_session_token}.${image_mime_type}`
-        this.file_write_stream = fsNonPromise.createWriteStream(this.filepath)
-    }
-
-    // This checks if the given content length, when added,
-    // will exceed the expected content length as given
-    public willOverload(content_length: number): boolean {
-        return this.current_content_length + content_length > this.expected_content_length
-    }
-
-    // This checks if the given content length, when added,
-    // will complete the expected content length as given
-    public willBeCompleted(content_length: number): boolean {
-        return this.current_content_length + content_length == this.expected_content_length
-    }
-
-    public getToken(): string {
-        return this.photo_session_token
-    }
-
-    public async write(data: Buffer): Promise<void> {
-        return new Promise( (resolve, reject) => {
-            this.file_write_stream.write(data)
-            resolve()
-        })
-    }
-
-    public close() {
-        this.file_write_stream.close()
-    }
-
-}
 
 const pages = {
     homepage: new HTMLPage(),
