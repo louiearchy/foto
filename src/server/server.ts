@@ -80,8 +80,8 @@ async function IsFileExisting(filepath: string): Promise<boolean> {
 }
 
 function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
-    let fileExtension = filepath.split('.').reverse()[0]
-    switch (fileExtension.toLowerCase()) {
+    let file_extension = filepath.split('.').reverse()[0]
+    switch (file_extension.toLowerCase()) {
         case "js":
             return "text/javascript"
         case "css":
@@ -97,12 +97,12 @@ function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
     }
 }
 
-function DeduceFileExtensionByContentType(contentType: string): string {
-    switch (contentType.toLowerCase()) {
+function DeduceFileExtensionByContentType(content_type: string): string {
+    switch (content_type.toLowerCase()) {
         case "image/jpg":
         case "image/png":
         case "image/webp":
-            return contentType.toLowerCase().split("/")[1]
+            return content_type.toLowerCase().split("/")[1]
         default:
             return "unknown"
     }
@@ -112,14 +112,14 @@ function DeduceFileExtensionByContentType(contentType: string): string {
  * A helper function that takes care of the mechanisms in binding a request.path to
  * a specific file
  */
-function BindPathToFile(requestPath: string, filepath: string, server) {
-    server.get(requestPath, async (_, reply) => {
-        let isFileExisting = await IsFileExisting(filepath)
-        if (isFileExisting) {
+function BindPathToFile(request_path: string, filepath: string, server) {
+    server.get(request_path, async (_, reply) => {
+        let file_exists = await IsFileExisting(filepath)
+        if (file_exists) {
             let fileData = await fsPromise.readFile(filepath)
-            let fileMimeType = DeduceMimeTypeByFileExtension(filepath)
-            if (fileMimeType) {
-                reply.type(fileMimeType)
+            let file_mime_type = DeduceMimeTypeByFileExtension(filepath)
+            if (file_mime_type) {
+                reply.type(file_mime_type)
             }
             reply.code(HTTPSTATUSCODE.Ok).send(fileData)
         }
@@ -130,38 +130,40 @@ function BindPathToFile(requestPath: string, filepath: string, server) {
 }
 
 function JSONifyCookies(cookies: string): any {
-    let withMultipleCookies = cookies.indexOf(";") > 0
-    let returningObject = {}
-    let cookies_pair_list = []
-    if (withMultipleCookies) {
-        cookies_pair_list = cookies.split(";")
+
+    let cookies_are_many = cookies.indexOf(";") > 0
+    let returning_json_object = {}
+    let cookie_list: string[] = []
+
+    if (cookies_are_many) {
+        cookie_list = cookies.split(";")
     }
     else {
-        cookies_pair_list.push(cookies)
+        cookie_list.push(cookies)
     }
-    for (let i = 0; i < cookies_pair_list.length; i++) 
-    {
-        let cookie_pair = cookies_pair_list[i];
-        let withSeparator = cookie_pair.indexOf("=") > 0
-        if (withSeparator) {
-            let splitted_cookie_pair = cookie_pair.split("=")
-            let cookieKey = splitted_cookie_pair[0]
-            let cookieValue = splitted_cookie_pair[1]
-            if (cookieKey.length > 0 && cookieValue.length > 0) {
-                Object.defineProperty(returningObject, cookieKey, {
-                    value: cookieValue,
+
+    cookie_list.map( (current_cookie) => {
+        let cookie_has_separator = current_cookie.indexOf("=") > 0
+        if (cookie_has_separator) {
+            let splitted_cookie_by_separator = current_cookie.split("=")
+            let cookie_key = splitted_cookie_by_separator[0]
+            let cookie_value = splitted_cookie_by_separator[1]
+            if (cookie_key.length > 0 && cookie_value.length > 0) {
+                Object.defineProperty(returning_json_object, cookie_key, {
+                    value: cookie_value,
                     enumerable: true
                 })
             }
         }
-    }
-    return returningObject
+    })
+
+    return returning_json_object
 }
 
 SERVER.get("/", async (request, reply) => { 
 
-    let clientHasCookie = typeof request.headers?.cookie === "string"
-    if (clientHasCookie) {
+    let client_has_cookie = typeof request.headers?.cookie === "string"
+    if (client_has_cookie) {
         let cookies = JSONifyCookies(request.headers.cookie)
         if (cookies?.sessionid) {
             if (await DatabaseQueries.IsSessionIdValid(cookies.sessionid)) {
@@ -176,8 +178,8 @@ SERVER.get("/", async (request, reply) => {
 
 SERVER.get("/log-in", async (request, reply) => { 
     
-    let clientHasCookie = typeof request.headers?.cookie === "string"
-    if (clientHasCookie) {
+    let client_has_cookie = typeof request.headers?.cookie === "string"
+    if (client_has_cookie) {
         let cookies = JSONifyCookies(request.headers.cookie)
         if (cookies?.sessionid) {
             if (await DatabaseQueries.IsSessionIdValid(cookies.sessionid)) {
@@ -192,8 +194,8 @@ SERVER.get("/log-in", async (request, reply) => {
 
 SERVER.get("/sign-up", async (request, reply) => {
     
-    let clientHasCookie = typeof request.headers?.cookie === "string"
-    if (clientHasCookie) {
+    let client_has_cookie = typeof request.headers?.cookie === "string"
+    if (client_has_cookie) {
         let cookies = JSONifyCookies(request.headers.cookie)
         if (cookies?.sessionid) {
             if (await DatabaseQueries.IsSessionIdValid(cookies.sessionid)) {
@@ -212,14 +214,15 @@ SERVER.get("/pages/*", async (request, reply) => {
      * we omit the `.js` which in this case without this, the server would fail to find the 
      * equivalent file for the request
      */
-    let isWithoutJsFileExtension = request.url.lastIndexOf(".js") == -1
-    const truePathToReactPage = path.join("src/web/", 
-        (isWithoutJsFileExtension) ? request.url + ".tsx" : request.url.replace(".js", ".tsx"))
-    let reactPageExists = await IsFileExisting(truePathToReactPage)
-    if (reactPageExists) {
-        let pageData = await DYNAMIC_REACT_PAGE_MANAGER.GetPage(truePathToReactPage)
-        if (pageData) {
-            reply.code(HTTPSTATUSCODE.Ok).type("text/javascript").send(pageData)
+    let react_path_has_js_file_extension = request.url.lastIndexOf(".js") == -1
+    let react_page_script_filename = (react_path_has_js_file_extension) ? request.url.replace('.js', '.tsx') : request.url + '.tsx'
+    let true_path_to_react_page_script = path.join("src/web/", react_page_script_filename)
+
+    let react_page_script_exists = await IsFileExisting(true_path_to_react_page_script)
+    if (react_page_script_exists) {
+        let react_page_script = await DYNAMIC_REACT_PAGE_MANAGER.GetPage(true_path_to_react_page_script)
+        if (react_page_script) {
+            reply.code(HTTPSTATUSCODE.Ok).type("text/javascript").send(react_page_script)
         }
         else /* if compilation error occurs */ {
             reply.code(HTTPSTATUSCODE.InternalServerError)
@@ -228,15 +231,15 @@ SERVER.get("/pages/*", async (request, reply) => {
 })
 
 SERVER.get("/assets/*", async (request, reply) => {
-    let truePathToAssetResource = request.url.replace("/assets/", "src/web/")
-    let assetResourceExists = await IsFileExisting(truePathToAssetResource)
-    if (assetResourceExists) {
-        let mimeType = DeduceMimeTypeByFileExtension(truePathToAssetResource)
-        if (mimeType) {
-            reply.type(mimeType)
+    let true_path_to_the_asset_file = request.url.replace("/assets/", "src/web/")
+    let asset_file_exists = await IsFileExisting(true_path_to_the_asset_file)
+    if (asset_file_exists) {
+        let asset_file_mime_type = DeduceMimeTypeByFileExtension(true_path_to_the_asset_file)
+        if (asset_file_mime_type) {
+            reply.type(asset_file_mime_type)
         }
-        let assetResourceData = await fsPromise.readFile(truePathToAssetResource)
-        reply.send(assetResourceData)
+        let asset_file = await fsPromise.readFile(true_path_to_the_asset_file)
+        reply.send(asset_file)
     }
     else {
         reply.code(HTTPSTATUSCODE.NotFound)
@@ -244,15 +247,15 @@ SERVER.get("/assets/*", async (request, reply) => {
 })
 
 SERVER.get("/fonts/*", async (request, reply) => {
-    let truePathToFontResource = path.join("built/web/", request.url)
-    let fontResourceExists = await IsFileExisting(truePathToFontResource)
-    if (fontResourceExists) {
-        let mimeType = DeduceMimeTypeByFileExtension(truePathToFontResource)
-        if (mimeType) {
-            reply.type(mimeType)
+    let true_path_to_font_resource_file = path.join("built/web/", request.url)
+    let font_resource_file_exists = await IsFileExisting(true_path_to_font_resource_file)
+    if (font_resource_file_exists) {
+        let mime_type = DeduceMimeTypeByFileExtension(true_path_to_font_resource_file)
+        if (mime_type) {
+            reply.type(mime_type)
         }
-        let fontResourceData = await fsPromise.readFile(truePathToFontResource)
-        reply.send(fontResourceData)
+        let font_resource_file = await fsPromise.readFile(true_path_to_font_resource_file)
+        reply.send(font_resource_file)
     }
     else /* if the font resource does not exists */ {
         reply.code(HTTPSTATUSCODE.NotFound)
@@ -272,13 +275,14 @@ function GeneratePictureId(): string {
 }
 
 SERVER.post("/log-in", async (request, reply) => {
-    let account_submission_info = (request.body as AccountSubmissionInfo)
-    const MISSING_ACCOUNT_INFO = "Missing account info"
     
-    if (!account_submission_info?.username || !account_submission_info?.password) {
-        reply.code(HTTPSTATUSCODE.BadRequest)
-        reply.send(MISSING_ACCOUNT_INFO)
-        return
+    let account_submission_info = (request.body as AccountSubmissionInfo)
+
+    let username_credential_is_missing = !(account_submission_info?.username)
+    let password_credential_is_missing = !(account_submission_info?.password)
+    
+    if (username_credential_is_missing || password_credential_is_missing) {
+        return reply.code(HTTPSTATUSCODE.BadRequest).send('MISSING ACCOUNT INFO')
     }
 
     /* if account info is submitted completely */
@@ -290,9 +294,8 @@ SERVER.post("/log-in", async (request, reply) => {
     if (account_exists) {
         let session_id = GenerateSessionID()
         await DatabaseQueries.SaveSession(username, session_id)
-        reply.code(HTTPSTATUSCODE.Ok)
         let set_cookie_value = `sessionid=${session_id}`
-        reply.header('set-cookie', set_cookie_value)
+        return reply.header('set-cookie', set_cookie_value).send(HTTPSTATUSCODE.Ok)
     }
 
     else /* if the account does not exists */ {
@@ -303,33 +306,32 @@ SERVER.post("/log-in", async (request, reply) => {
 
 SERVER.post("/sign-up", async (request, reply) => {
 
-    let account_info = (request.body as AccountSubmissionInfo)
-    const MISSING_ACCOUNT_INFO = "Missing account info"
-    const USERNAME_ALREADY_EXISTS = "USERNAME_ALREADY_EXISTS"
-    if (!account_info?.username || !account_info.password) {
-        reply.code(HTTPSTATUSCODE.BadRequest)
-        reply.send(MISSING_ACCOUNT_INFO)
-        return
+    let account_submission_info = (request.body as AccountSubmissionInfo)
+
+    let username_credential_is_missing = !(account_submission_info?.username)
+    let password_credential_is_missing = !(account_submission_info?.password)
+    
+    if (username_credential_is_missing || password_credential_is_missing) {
+        return reply.code(HTTPSTATUSCODE.BadRequest).send('MISSING ACCOUNT INFO')
     }
 
     /* if account info is submitted completely */
 
-    let username = account_info.username
-    let password = account_info.password
+    let username = account_submission_info.username
+    let password = account_submission_info.password
 
     const username_exists = await DatabaseQueries.CheckUsernameIfAlreadyRegistered(username)
     
     if (username_exists) {
-        reply.code(HTTPSTATUSCODE.BadRequest).send(USERNAME_ALREADY_EXISTS)
-        return
+        return reply.code(HTTPSTATUSCODE.BadRequest).send('USERNAME ALREADY EXISTS')
     }
 
     DatabaseQueries.RecordAccount(username, password)
 
     let session_id = GenerateSessionID()
     DatabaseQueries.SaveSession(username, session_id)
-    reply.code(HTTPSTATUSCODE.Ok)
-    reply.header('set-cookie', `sessionid=${session_id}`)
+
+    return reply.header('set-cookie', `sessionid=${session_id}`).code(HTTPSTATUSCODE.Ok)
     
 })
 
