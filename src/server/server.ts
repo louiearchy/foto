@@ -544,6 +544,14 @@ server.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
             return
         }
 
+        let cookies = JSONifyCookies(request.headers.cookie)
+
+        if (!(cookies?.sessionid)) {
+            body.status = ImageUploadingHandlingReportStatus.MissingAuthorization
+            done(null, body)
+            return
+        }
+
         let filepath = `built/${GeneratePhotoSessionToken()}.${DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")}`
         let file_write_stream = fsNonPromise.createWriteStream(filepath)
         
@@ -572,9 +580,13 @@ server.post("/to/album/:id?", async (request, reply) => {
         return
     }
     if (body.status == ImageUploadingHandlingReportStatus.Successful) {
+        let cookies = JSONifyCookies(request.headers.cookie)
+        let username = await GetUsernameBySessionID(cookies?.sessionid)
+        await RecordNewPicture(username, (request.params as any)?.id, body.filepath)
         reply.code(HttpStatusCode.Ok)
         return
     }
+
 })
 
 server.get("/albums", async function (request, reply) {
