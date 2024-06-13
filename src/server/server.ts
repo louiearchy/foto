@@ -1,13 +1,14 @@
 
-import Fastify from "fastify"
-import HTMLPage from "./dynamic-html"
-import DynamicReactPageManager from "./dynamic-react-page-manager"
-import fs from "node:fs/promises"
-import path from "node:path"
-import pg from "pg"
-import { v4 as uuidv4 } from "uuid"
-import { Buffer } from "node:buffer"
-import fsNonPromise from "node:fs"
+import { Buffer } from 'node:buffer'
+import Fastify from 'fastify'
+import fs from 'node:fs'
+import fsPromise from 'node:fs/promises'
+import path from 'node:path'
+import pg from 'pg'
+import { v4 as uuidv4 } from 'uuid'
+
+import DynamicReactPageManager from './dynamic-react-page-manager'
+import HTMLPage from './dynamic-html'
 
 const PORT = 3000
 const HOST = "localhost"
@@ -54,7 +55,7 @@ const HttpStatusCode = {
 
 async function IsFileExisting(filepath: string): Promise<boolean> {
     try {
-        await fs.access(filepath, fs.constants.R_OK | fs.constants.F_OK)
+        await fsPromise.access(filepath, fsPromise.constants.R_OK | fsPromise.constants.F_OK)
         return Promise.resolve(true)
     } catch {
         return Promise.resolve(false)
@@ -126,7 +127,7 @@ function BindPathToFile(requestPath: string, filepath: string, server) {
     server.get(requestPath, async (_, reply) => {
         let isFileExisting = await IsFileExisting(filepath)
         if (isFileExisting) {
-            let fileData = await fs.readFile(filepath)
+            let fileData = await fsPromise.readFile(filepath)
             let fileMimeType = DeduceMimeTypeByFileExtension(filepath)
             if (fileMimeType) {
                 reply.type(fileMimeType)
@@ -252,7 +253,7 @@ server.get("/assets/*", async (request, reply) => {
         if (mimeType) {
             reply.type(mimeType)
         }
-        let assetResourceData = await fs.readFile(truePathToAssetResource)
+        let assetResourceData = await fsPromise.readFile(truePathToAssetResource)
         reply.send(assetResourceData)
     }
     else {
@@ -268,7 +269,7 @@ server.get("/fonts/*", async (request, reply) => {
         if (mimeType) {
             reply.type(mimeType)
         }
-        let fontResourceData = await fs.readFile(truePathToFontResource)
+        let fontResourceData = await fsPromise.readFile(truePathToFontResource)
         reply.send(fontResourceData)
     }
     else /* if the font resource does not exists */ {
@@ -501,7 +502,7 @@ server.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
         }
 
         let filepath = `built/${GeneratePhotoSessionToken()}.${DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")}`
-        let file_write_stream = fsNonPromise.createWriteStream(filepath)
+        let file_write_stream = fs.createWriteStream(filepath)
         
         payload.on('data', function (chunk: Buffer) {
             file_write_stream.write(chunk)
