@@ -86,7 +86,7 @@ export default class DynamicReactPageManager {
         }
 
 
-        if (!this.DoesCompiledPagesDirectoryExists)
+        if (!this.DoesCompiledPagesDirectoryExists())
             fs.mkdirSync(this.compiledPagesDirectoryPath, { recursive: true });
 
     }
