@@ -14,6 +14,7 @@ import UtilsFile from './utility/file'
 import UtilsID from './utility/id'
 
 import AssetsRouteHandler from './route-handlers/assets'
+import FontsHandler from './route-handlers/fonts'
 import HomepageRouteHandler from './route-handlers/homepage'
 import LogInRequestHandler from './route-handlers/log-in'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
@@ -70,22 +71,7 @@ SERVER.get("/sign-up", HomepageRouteHandler)
 SERVER.get("/pages/*", ReactPageScriptHandler)
 SERVER.get("/assets/*", AssetsRouteHandler)
 
-SERVER.get("/fonts/*", async (request, reply) => {
-    let true_path_to_font_resource_file = path.join("built/web/", request.url)
-    let font_resource_file_exists = await UtilsFile.IsFileExisting(true_path_to_font_resource_file)
-    if (font_resource_file_exists) {
-        let mime_type = UtilsFile.DeduceMimeTypeByFileExtension(true_path_to_font_resource_file)
-        if (mime_type) {
-            reply.type(mime_type)
-        }
-        let font_resource_file = await fsPromise.readFile(true_path_to_font_resource_file)
-        reply.send(font_resource_file)
-    }
-    else /* if the font resource does not exists */ {
-        reply.code(Globals.HttpStatusCode.NotFound)
-    }
-})
-
+SERVER.get("/fonts/*", FontsHandler)
 SERVER.post("/log-in", LogInRequestHandler)
 SERVER.post("/sign-up", SignUpRequestHandler)
 
