@@ -7,11 +7,13 @@ import path from 'node:path'
 import { v4 as uuidv4 } from 'uuid'
 
 import DatabaseQueries from './database-queries'
-import DynamicReactPageManager from './dynamic-react-page-manager'
+import Globals from './globals'
 import HtmlTemplatePages from './html/template-pages'
 import JSONifyCookies from './utility/jsonify-cookies'
+import UtilsFile from './utility/file'
 
 import HomepageRouteHandler from './route-handlers/homepage'
+import ReactPageScriptHandler from './route-handlers/react-page-scripts'
 
 // ENUMS
 
@@ -43,86 +45,22 @@ const SERVER = Fastify()
 SERVER.register(require('@fastify/formbody'))
 
 /**
- * The path to the file where the Dynamic React Page Manager would store
- * all of its information
-*/
-const DRPM_WATCHFILE_PATH = 'built/drpm-watch-file.json'
-
-
-/**
- * This is used to compile react scripts while the server is running
-*/
-const DYNAMIC_REACT_PAGE_MANAGER = new DynamicReactPageManager(DRPM_WATCHFILE_PATH, 'built/web/pages/')
-
-const HTTPSTATUSCODE = {
-    Continue: 100,
-    Ok: 200,
-    NotFound: 404,
-    InternalServerError: 500,
-    BadRequest: 400,
-    Unauthorized: 401,
-    RequestTimeout: 408,
-    Conflict: 409
-}
-
-
-// Utility functions 
-
-async function IsFileExisting(filepath: string): Promise<boolean> {
-    try {
-        await fsPromise.access(filepath, fsPromise.constants.R_OK | fsPromise.constants.F_OK)
-        return Promise.resolve(true)
-    } catch {
-        return Promise.resolve(false)
-    }
-}
-
-function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
-    let file_extension = filepath.split('.').reverse()[0]
-    switch (file_extension.toLowerCase()) {
-        case "js":
-            return "text/javascript"
-        case "css":
-            return "text/css"
-        case "otf":
-            return "font/otf"
-        case "ttf":
-            return "font/ttf"
-        case "svg":
-            return "image/svg+xml"
-        default:
-            return undefined
-    }
-}
-
-function DeduceFileExtensionByContentType(content_type: string): string {
-    switch (content_type.toLowerCase()) {
-        case "image/jpg":
-        case "image/png":
-        case "image/webp":
-            return content_type.toLowerCase().split("/")[1]
-        default:
-            return "unknown"
-    }
-}
-
-/**
  * A helper function that takes care of the mechanisms in binding a request.path to
  * a specific file
  */
 function BindPathToFile(request_path: string, filepath: string, server) {
     server.get(request_path, async (_, reply) => {
-        let file_exists = await IsFileExisting(filepath)
+        let file_exists = await UtilsFile.IsFileExisting(filepath)
         if (file_exists) {
             let fileData = await fsPromise.readFile(filepath)
-            let file_mime_type = DeduceMimeTypeByFileExtension(filepath)
+            let file_mime_type = UtilsFile.DeduceMimeTypeByFileExtension(filepath)
             if (file_mime_type) {
                 reply.type(file_mime_type)
             }
-            reply.code(HTTPSTATUSCODE.Ok).send(fileData)
+            reply.code(Globals.HttpStatusCode.Ok).send(fileData)
         }
         else /* if the file does not exist */ {
-            reply.code(HTTPSTATUSCODE.NotFound)
+            reply.code(Globals.HttpStatusCode.NotFound)
         }
     })
 }
@@ -130,35 +68,13 @@ function BindPathToFile(request_path: string, filepath: string, server) {
 SERVER.get("/", HomepageRouteHandler)
 SERVER.get("/log-in", HomepageRouteHandler)
 SERVER.get("/sign-up", HomepageRouteHandler)
-
-SERVER.get("/pages/*", async (request, reply) => {
-    /**
-     * isWithoutJsFileExtension is to detect whether the request has js file extension on it,
-     * because whenever we use import other components or scripts such as in the react pages
-     * we omit the `.js` which in this case without this, the server would fail to find the 
-     * equivalent file for the request
-     */
-    let react_path_has_js_file_extension = request.url.lastIndexOf(".js") == -1
-    let react_page_script_filename = (react_path_has_js_file_extension) ? request.url.replace('.js', '.tsx') : request.url + '.tsx'
-    let true_path_to_react_page_script = path.join("src/web/", react_page_script_filename)
-
-    let react_page_script_exists = await IsFileExisting(true_path_to_react_page_script)
-    if (react_page_script_exists) {
-        let react_page_script = await DYNAMIC_REACT_PAGE_MANAGER.GetPage(true_path_to_react_page_script)
-        if (react_page_script) {
-            reply.code(HTTPSTATUSCODE.Ok).type("text/javascript").send(react_page_script)
-        }
-        else /* if compilation error occurs */ {
-            reply.code(HTTPSTATUSCODE.InternalServerError)
-        }
-    }
-})
+SERVER.get("/pages/*", ReactPageScriptHandler)
 
 SERVER.get("/assets/*", async (request, reply) => {
     let true_path_to_the_asset_file = request.url.replace("/assets/", "src/web/")
-    let asset_file_exists = await IsFileExisting(true_path_to_the_asset_file)
+    let asset_file_exists = await UtilsFile.IsFileExisting(true_path_to_the_asset_file)
     if (asset_file_exists) {
-        let asset_file_mime_type = DeduceMimeTypeByFileExtension(true_path_to_the_asset_file)
+        let asset_file_mime_type = UtilsFile.DeduceMimeTypeByFileExtension(true_path_to_the_asset_file)
         if (asset_file_mime_type) {
             reply.type(asset_file_mime_type)
         }
@@ -166,15 +82,15 @@ SERVER.get("/assets/*", async (request, reply) => {
         reply.send(asset_file)
     }
     else {
-        reply.code(HTTPSTATUSCODE.NotFound)
+        reply.code(Globals.HttpStatusCode.NotFound)
     }
 })
 
 SERVER.get("/fonts/*", async (request, reply) => {
     let true_path_to_font_resource_file = path.join("built/web/", request.url)
-    let font_resource_file_exists = await IsFileExisting(true_path_to_font_resource_file)
+    let font_resource_file_exists = await UtilsFile.IsFileExisting(true_path_to_font_resource_file)
     if (font_resource_file_exists) {
-        let mime_type = DeduceMimeTypeByFileExtension(true_path_to_font_resource_file)
+        let mime_type = UtilsFile.DeduceMimeTypeByFileExtension(true_path_to_font_resource_file)
         if (mime_type) {
             reply.type(mime_type)
         }
@@ -182,7 +98,7 @@ SERVER.get("/fonts/*", async (request, reply) => {
         reply.send(font_resource_file)
     }
     else /* if the font resource does not exists */ {
-        reply.code(HTTPSTATUSCODE.NotFound)
+        reply.code(Globals.HttpStatusCode.NotFound)
     }
 })
 
@@ -206,7 +122,7 @@ SERVER.post("/log-in", async (request, reply) => {
     let password_credential_is_missing = !(account_submission_info?.password)
     
     if (username_credential_is_missing || password_credential_is_missing) {
-        return reply.code(HTTPSTATUSCODE.BadRequest).send('MISSING ACCOUNT INFO')
+        return reply.code(Globals.HttpStatusCode.BadRequest).send('MISSING ACCOUNT INFO')
     }
 
     /* if account info is submitted completely */
@@ -219,11 +135,11 @@ SERVER.post("/log-in", async (request, reply) => {
         let session_id = GenerateSessionID()
         await DatabaseQueries.SaveSession(username, session_id)
         let set_cookie_value = `sessionid=${session_id}`
-        return reply.header('set-cookie', set_cookie_value).send(HTTPSTATUSCODE.Ok)
+        return reply.header('set-cookie', set_cookie_value).send(Globals.HttpStatusCode.Ok)
     }
 
     else /* if the account does not exists */ {
-        reply.code(HTTPSTATUSCODE.NotFound)
+        reply.code(Globals.HttpStatusCode.NotFound)
     }
         
 })
@@ -236,7 +152,7 @@ SERVER.post("/sign-up", async (request, reply) => {
     let password_credential_is_missing = !(account_submission_info?.password)
     
     if (username_credential_is_missing || password_credential_is_missing) {
-        return reply.code(HTTPSTATUSCODE.BadRequest).send('MISSING ACCOUNT INFO')
+        return reply.code(Globals.HttpStatusCode.BadRequest).send('MISSING ACCOUNT INFO')
     }
 
     /* if account info is submitted completely */
@@ -247,7 +163,7 @@ SERVER.post("/sign-up", async (request, reply) => {
     const username_exists = await DatabaseQueries.CheckUsernameIfAlreadyRegistered(username)
     
     if (username_exists) {
-        return reply.code(HTTPSTATUSCODE.BadRequest).send('USERNAME ALREADY EXISTS')
+        return reply.code(Globals.HttpStatusCode.BadRequest).send('USERNAME ALREADY EXISTS')
     }
 
     DatabaseQueries.RecordAccount(username, password)
@@ -255,7 +171,7 @@ SERVER.post("/sign-up", async (request, reply) => {
     let session_id = GenerateSessionID()
     DatabaseQueries.SaveSession(username, session_id)
 
-    return reply.header('set-cookie', `sessionid=${session_id}`).code(HTTPSTATUSCODE.Ok)
+    return reply.header('set-cookie', `sessionid=${session_id}`).code(Globals.HttpStatusCode.Ok)
     
 })
 
@@ -278,26 +194,26 @@ SERVER.post("/new/album", async (request, reply) => {
                         let username = await DatabaseQueries.GetUsernameBySessionID(cookies.sessionid)
                         let albumid = GenerateAlbumId()
                         await DatabaseQueries.RecordNewAlbum(username, albumid, album_name)
-                        reply.code(HTTPSTATUSCODE.Ok).send(albumid).type("text/plain")
+                        reply.code(Globals.HttpStatusCode.Ok).send(albumid).type("text/plain")
                         return
                     }
                     else /* if the content type is not text/plain */ {
-                        reply.code(HTTPSTATUSCODE.BadRequest)
+                        reply.code(Globals.HttpStatusCode.BadRequest)
                         return
                     }
                 }
                 else /* if the request did not give the content-length and content-type */ {
-                    reply.code(HTTPSTATUSCODE.BadRequest)
+                    reply.code(Globals.HttpStatusCode.BadRequest)
                     return
                 }
             }
             else /* if the session id is not valid */ {
-                reply.code(HTTPSTATUSCODE.BadRequest)
+                reply.code(Globals.HttpStatusCode.BadRequest)
                 return
             }
         }
         else /* without session id */ {
-            reply.code(HTTPSTATUSCODE.Unauthorized)
+            reply.code(Globals.HttpStatusCode.Unauthorized)
             return
         }
     }
@@ -328,7 +244,7 @@ SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
             return
         }
 
-        let filepath = `built/${GeneratePhotoSessionToken()}.${DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")}`
+        let filepath = `built/${GeneratePhotoSessionToken()}.${UtilsFile.DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")}`
         let file_write_stream = fs.createWriteStream(filepath)
         
         payload.on('data', function (chunk: Buffer) {
@@ -352,14 +268,14 @@ SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
 SERVER.post("/to/album/:id?", async (request, reply) => {
     let body = (request.body as ImageUploadingHandlingReport)
     if (body?.status == ImageUploadingHandlingReportStatus.MissingAuthorization) {
-        reply.code(HTTPSTATUSCODE.Unauthorized)
+        reply.code(Globals.HttpStatusCode.Unauthorized)
         return
     }
     if (body.status == ImageUploadingHandlingReportStatus.Successful) {
         let cookies = JSONifyCookies(request.headers.cookie)
         let username = await DatabaseQueries.GetUsernameBySessionID(cookies?.sessionid)
         await DatabaseQueries.RecordNewPicture(username, (request.params as any)?.id, body.filepath)
-        reply.code(HTTPSTATUSCODE.Ok)
+        reply.code(Globals.HttpStatusCode.Ok)
         return
     }
 
@@ -371,22 +287,22 @@ SERVER.get("/albums", async function (request, reply) {
         if (cookies?.sessionid) {
             let is_sessionid_valid = await DatabaseQueries.IsSessionIdValid(cookies.sessionid)
             if (!is_sessionid_valid) {
-                reply.code(HTTPSTATUSCODE.Unauthorized)
+                reply.code(Globals.HttpStatusCode.Unauthorized)
                 return
             }
             /* if the sessionid is valid */
             let username = await DatabaseQueries.GetUsernameBySessionID(cookies.sessionid)
             let albums = await DatabaseQueries.GetAlbums(username)
-            reply.code(HTTPSTATUSCODE.Ok).send(albums).type("application/json")
+            reply.code(Globals.HttpStatusCode.Ok).send(albums).type("application/json")
             return
         }
         else /* if there is no sessionid */ {
-            reply.code(HTTPSTATUSCODE.Unauthorized)
+            reply.code(Globals.HttpStatusCode.Unauthorized)
             return
         }
     }
     else /* if there is no cookie */ {
-        reply.code(HTTPSTATUSCODE.Unauthorized)
+        reply.code(Globals.HttpStatusCode.Unauthorized)
     }
 })
 
@@ -399,7 +315,7 @@ SERVER.get("/home", async function (request, reply) {
                 reply.redirect("/")
                 return
             }
-            reply.code(HTTPSTATUSCODE.Ok).type("text/html").send(HtmlTemplatePages.mainpage.data)  
+            reply.code(Globals.HttpStatusCode.Ok).type("text/html").send(HtmlTemplatePages.mainpage.data)  
         }
         else /* if no sessionid is given */ {
             reply.redirect("/")
@@ -416,30 +332,30 @@ SERVER.get("/album/:albumid", async function (request, reply) {
     let { albumid } = request.params as any
 
     if (!albumid) {
-        reply.code(HTTPSTATUSCODE.BadRequest).redirect("/home")
+        reply.code(Globals.HttpStatusCode.BadRequest).redirect("/home")
         return
     }
 
     if (!request.headers?.cookie) {        
-        reply.code(HTTPSTATUSCODE.Unauthorized).redirect("/")
+        reply.code(Globals.HttpStatusCode.Unauthorized).redirect("/")
         return
     }
 
     let cookies = JSONifyCookies(request.headers.cookie)
 
     if (!cookies?.sessionid) {
-        reply.code(HTTPSTATUSCODE.Unauthorized).redirect("/")
+        reply.code(Globals.HttpStatusCode.Unauthorized).redirect("/")
         return
     }
 
     let is_sessionid_not_valid = !(await DatabaseQueries.IsSessionIdValid(cookies.sessionid))
 
     if (is_sessionid_not_valid) {
-        reply.code(HTTPSTATUSCODE.Unauthorized).redirect("/")
+        reply.code(Globals.HttpStatusCode.Unauthorized).redirect("/")
         return
     }
 
-    reply.code(HTTPSTATUSCODE.Ok).type("text/html").send(HtmlTemplatePages.mainpage.data)
+    reply.code(Globals.HttpStatusCode.Ok).type("text/html").send(HtmlTemplatePages.mainpage.data)
     return
 
 
@@ -450,31 +366,31 @@ SERVER.get("/album/name/:albumid", async function (request, reply) {
     let { albumid } = (request.params as any)
 
     if (!albumid) {
-        reply.code(HTTPSTATUSCODE.BadRequest)
+        reply.code(Globals.HttpStatusCode.BadRequest)
         return
     }
 
     if (!request.headers?.cookie) {
-        reply.code(HTTPSTATUSCODE.Unauthorized)
+        reply.code(Globals.HttpStatusCode.Unauthorized)
         return
     }
 
     let cookies = JSONifyCookies(request.headers.cookie)
 
     if (!cookies.sessionid) {
-        reply.code(HTTPSTATUSCODE.Unauthorized)
+        reply.code(Globals.HttpStatusCode.Unauthorized)
         return
     }
 
     let sessionid_is_not_valid = !(await DatabaseQueries.IsSessionIdValid(cookies.sessionid))
 
     if (sessionid_is_not_valid) {
-        reply.code(HTTPSTATUSCODE.Unauthorized)
+        reply.code(Globals.HttpStatusCode.Unauthorized)
         return
     }
 
     let album_name = await DatabaseQueries.GetAlbumNameByItsAlbumID(albumid)
-    reply.code(HTTPSTATUSCODE.Ok).type("text/plain").send(album_name)
+    reply.code(Globals.HttpStatusCode.Ok).type("text/plain").send(album_name)
     return
 
 })
@@ -499,7 +415,7 @@ function main() {
                 process.exit(-1)
             }
             else {
-                DatabaseQueries.FOTODB_CLIENT.connect()
+                Globals.FotoDbClient.connect()
                 console.log(`The development server is now running at http://${SERVER_HOST}:${SERVER_PORT}`)
             }
         }
@@ -508,8 +424,8 @@ function main() {
 }
 
 process.on('SIGINT', async function() {
-    await DatabaseQueries.FOTODB_CLIENT.end()
-    DYNAMIC_REACT_PAGE_MANAGER.Save()
+    await Globals.FotoDbClient.end()
+    Globals.DynamicReactPageManagerInstance.Save()
     process.exit(0)
 })
 
