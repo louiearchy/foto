@@ -37,7 +37,7 @@ SERVER.register(require('@fastify/formbody'))
  * A helper function that takes care of the mechanisms in binding a request.path to
  * a specific file
  */
-function BindPathToFile(request_path: string, filepath: string, server) {
+function LinkPathToFile(request_path: string, filepath: string, server) {
     server.get(request_path, async (_, reply) => {
         let file_exists = await UtilsFile.IsFileExisting(filepath)
         if (file_exists) {
@@ -109,12 +109,12 @@ SERVER.post("/sign-up", SignUpRequestHandler)
 SERVER.post("/new/album", CreateAlbumRequestHandler)
 SERVER.post("/to/album/:id?", PostPictureRequestHandler)
 
-BindPathToFile("/react", "node_modules/react/umd/react.development.js", SERVER)
-BindPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", SERVER)
-BindPathToFile("/react-router-dom", "node_modules/react-router-dom/dist/umd/react-router-dom.development.js", SERVER)
-BindPathToFile("/react-router", "node_modules/react-router/dist/umd/react-router.development.js", SERVER)
-BindPathToFile("/remix-router", "node_modules/@remix-run/router/dist/router.umd.js", SERVER)
-BindPathToFile("/jquery", "node_modules/jquery/dist/jquery.js", SERVER)
+LinkPathToFile("/react", "node_modules/react/umd/react.development.js", SERVER)
+LinkPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", SERVER)
+LinkPathToFile("/react-router-dom", "node_modules/react-router-dom/dist/umd/react-router-dom.development.js", SERVER)
+LinkPathToFile("/react-router", "node_modules/react-router/dist/umd/react-router.development.js", SERVER)
+LinkPathToFile("/remix-router", "node_modules/@remix-run/router/dist/router.umd.js", SERVER)
+LinkPathToFile("/jquery", "node_modules/jquery/dist/jquery.js", SERVER)
 
 function main() {
     SERVER.listen(
