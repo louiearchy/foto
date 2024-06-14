@@ -6,7 +6,7 @@ import Globals from '../globals'
 import UtilsFile from '../utility/file'
 
 export default async function ReactPageScriptHandler ( request: FastifyRequest, reply: FastifyReply ) {
-    let react_path_has_js_file_extension = request.url.lastIndexOf(".js") == -1
+    let react_path_has_js_file_extension = request.url.lastIndexOf(".js") != -1
     let react_page_script_filename = (react_path_has_js_file_extension) ? request.url.replace('.js', '.tsx') : request.url + '.tsx'
     let true_path_to_react_page_script = path.join("src/web/", react_page_script_filename)
 
