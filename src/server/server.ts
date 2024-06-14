@@ -96,10 +96,6 @@ function GenerateAlbumId(): string {
     return uuidv4()
 }
 
-function GeneratePictureId(): string {
-    return uuidv4()
-}
-
 SERVER.post("/log-in", async (request, reply) => {
     
     let account_submission_info = (request.body as AccountSubmissionInfo)
