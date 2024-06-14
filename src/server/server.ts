@@ -3,36 +3,24 @@ import { Buffer } from 'node:buffer'
 import Fastify from 'fastify'
 import fs from 'node:fs'
 import fsPromise from 'node:fs/promises'
-import { v4 as uuidv4 } from 'uuid'
 
 import DatabaseQueries from './database-queries'
 import Globals from './globals'
 import HtmlTemplatePages from './html/template-pages'
+import { ImageUploadingHandlingReport } from './interfaces'
+import { ImageUploadingHandlingReportStatus } from './enums'
 import JSONifyCookies from './utility/jsonify-cookies'
 import UtilsFile from './utility/file'
+import UtilsID from './utility/id'
 
 import AssetsRouteHandler from './route-handlers/assets'
 import CreateAlbumRequestHandler from './route-handlers/create-album'
 import FontsHandler from './route-handlers/fonts'
 import HomepageRouteHandler from './route-handlers/homepage'
 import LogInRequestHandler from './route-handlers/log-in'
+import PostPictureRequestHandler from './route-handlers/post-picture'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
 import SignUpRequestHandler from './route-handlers/sign-up'
-
-// ENUMS
-
-enum ImageUploadingHandlingReportStatus {
-    MissingAuthorization,
-    Successful
-}
-
-
-// INTERFACES
-
-interface ImageUploadingHandlingReport {
-    status?: ImageUploadingHandlingReportStatus,
-    filepath?: string
-}
 
 
 // GLOBAL CONST VARIABLES
@@ -85,7 +73,7 @@ SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
             return
         }
 
-        let filepath = `built/${GeneratePhotoSessionToken()}.${UtilsFile.DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")}`
+        let filepath = `built/${UtilsID.GeneratePhotoSessionToken()}.${UtilsFile.DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")}`
         let file_write_stream = fs.createWriteStream(filepath)
         
         payload.on('data', function (chunk: Buffer) {
@@ -113,29 +101,7 @@ SERVER.get("/fonts/*", FontsHandler)
 SERVER.post("/log-in", LogInRequestHandler)
 SERVER.post("/sign-up", SignUpRequestHandler)
 SERVER.post("/new/album", CreateAlbumRequestHandler)
-
-function GeneratePhotoSessionToken(): string {
-    return uuidv4()
-}
-
-/**
- * The handler for clients posting a picture
- */
-SERVER.post("/to/album/:id?", async (request, reply) => {
-    let body = (request.body as ImageUploadingHandlingReport)
-    if (body?.status == ImageUploadingHandlingReportStatus.MissingAuthorization) {
-        reply.code(Globals.HttpStatusCode.Unauthorized)
-        return
-    }
-    if (body.status == ImageUploadingHandlingReportStatus.Successful) {
-        let cookies = JSONifyCookies(request.headers.cookie)
-        let username = await DatabaseQueries.GetUsernameBySessionID(cookies?.sessionid)
-        await DatabaseQueries.RecordNewPicture(username, (request.params as any)?.id, body.filepath)
-        reply.code(Globals.HttpStatusCode.Ok)
-        return
-    }
-
-})
+SERVER.post("/to/album/:id?", PostPictureRequestHandler)
 
 SERVER.get("/albums", async function (request, reply) {
     if (request.headers?.cookie) {

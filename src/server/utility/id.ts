@@ -9,7 +9,12 @@ function GenerateAlbumId(): string {
     return uuidv4()
 }
 
+function GeneratePhotoSessionToken(): string {
+    return uuidv4()
+}
+
 export default {
     GenerateAlbumId,
-    GenerateSessionID
+    GenerateSessionID,
+    GeneratePhotoSessionToken
 }
