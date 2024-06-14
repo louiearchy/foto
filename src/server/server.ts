@@ -64,21 +64,6 @@ function BindPathToFile(request_path: string, filepath: string, server) {
     })
 }
 
-SERVER.get("/", HomepageRouteHandler)
-SERVER.get("/log-in", HomepageRouteHandler)
-SERVER.get("/sign-up", HomepageRouteHandler)
-SERVER.get("/pages/*", ReactPageScriptHandler)
-SERVER.get("/assets/*", AssetsRouteHandler)
-
-SERVER.get("/fonts/*", FontsHandler)
-SERVER.post("/log-in", LogInRequestHandler)
-SERVER.post("/sign-up", SignUpRequestHandler)
-SERVER.post("/new/album", CreateAlbumRequestHandler)
-
-function GeneratePhotoSessionToken(): string {
-    return uuidv4()
-}
-
 // For file upload, closely related to /to/album/:id? POST request handler
 SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function (request, payload, done) {
     if (/\/to\/album\//.test(request.url)) {
@@ -117,6 +102,21 @@ SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
 
     }
 })
+
+SERVER.get("/", HomepageRouteHandler)
+SERVER.get("/log-in", HomepageRouteHandler)
+SERVER.get("/sign-up", HomepageRouteHandler)
+SERVER.get("/pages/*", ReactPageScriptHandler)
+SERVER.get("/assets/*", AssetsRouteHandler)
+
+SERVER.get("/fonts/*", FontsHandler)
+SERVER.post("/log-in", LogInRequestHandler)
+SERVER.post("/sign-up", SignUpRequestHandler)
+SERVER.post("/new/album", CreateAlbumRequestHandler)
+
+function GeneratePhotoSessionToken(): string {
+    return uuidv4()
+}
 
 /**
  * The handler for clients posting a picture
