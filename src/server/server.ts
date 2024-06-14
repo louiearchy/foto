@@ -6,7 +6,6 @@ import fsPromise from 'node:fs/promises'
 
 import DatabaseQueries from './database-queries'
 import Globals from './globals'
-import HtmlTemplatePages from './html/template-pages'
 import { ImageUploadingHandlingReport } from './interfaces'
 import { ImageUploadingHandlingReportStatus } from './enums'
 import JSONifyCookies from './utility/jsonify-cookies'
@@ -23,6 +22,7 @@ import MainPageRequestHandler from './route-handlers/mainpage'
 import PostPictureRequestHandler from './route-handlers/post-picture'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
 import SignUpRequestHandler from './route-handlers/sign-up'
+import SpecificAlbumPageHandler from './route-handlers/specific-album-page'
 
 
 // GLOBAL CONST VARIABLES
@@ -100,49 +100,13 @@ SERVER.get("/pages/*", ReactPageScriptHandler)
 SERVER.get("/assets/*", AssetsRouteHandler)
 SERVER.get("/albums", GetAlbumsListRequestHandler)
 SERVER.get("/home", MainPageRequestHandler)
+SERVER.get("/album/:albumid", SpecificAlbumPageHandler)
 
 SERVER.get("/fonts/*", FontsHandler)
 SERVER.post("/log-in", LogInRequestHandler)
 SERVER.post("/sign-up", SignUpRequestHandler)
 SERVER.post("/new/album", CreateAlbumRequestHandler)
 SERVER.post("/to/album/:id?", PostPictureRequestHandler)
-
-/*
-    Serving the album page
-*/
-SERVER.get("/album/:albumid", async function (request, reply) {
-    
-    let { albumid } = request.params as any
-
-    if (!albumid) {
-        reply.code(Globals.HttpStatusCode.BadRequest).redirect("/home")
-        return
-    }
-
-    if (!request.headers?.cookie) {        
-        reply.code(Globals.HttpStatusCode.Unauthorized).redirect("/")
-        return
-    }
-
-    let cookies = JSONifyCookies(request.headers.cookie)
-
-    if (!cookies?.sessionid) {
-        reply.code(Globals.HttpStatusCode.Unauthorized).redirect("/")
-        return
-    }
-
-    let is_sessionid_not_valid = !(await DatabaseQueries.IsSessionIdValid(cookies.sessionid))
-
-    if (is_sessionid_not_valid) {
-        reply.code(Globals.HttpStatusCode.Unauthorized).redirect("/")
-        return
-    }
-
-    reply.code(Globals.HttpStatusCode.Ok).type("text/html").send(HtmlTemplatePages.mainpage.data)
-    return
-
-
-})
 
 SERVER.get("/album/name/:albumid", async function (request, reply) {
 
