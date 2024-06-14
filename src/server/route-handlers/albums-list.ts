@@ -1,4 +1,6 @@
 
+import { FastifyReply, FastifyRequest } from 'fastify'
+
 import DatabaseQueries from '../database-queries'
 import Globals from '../globals'
 import JSONifyCookies from "../utility/jsonify-cookies"
@@ -7,7 +9,7 @@ import JSONifyCookies from "../utility/jsonify-cookies"
  * This route handler handles all the requests for getting the list of albums
  * specific to the user
  */
-export default async function GetAlbumsListRequestHandler (request, reply) {
+export default async function GetAlbumsListRequestHandler ( request: FastifyRequest, reply: FastifyReply ) {
     if (request.headers?.cookie) {
         let cookies = JSONifyCookies(request.headers.cookie)
         if (cookies?.sessionid) {
