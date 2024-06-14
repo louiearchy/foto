@@ -11,10 +11,13 @@ import Globals from './globals'
 import HtmlTemplatePages from './html/template-pages'
 import JSONifyCookies from './utility/jsonify-cookies'
 import UtilsFile from './utility/file'
+import UtilsID from './utility/id'
 
 import AssetsRouteHandler from './route-handlers/assets'
 import HomepageRouteHandler from './route-handlers/homepage'
+import LogInRequestHandler from './route-handlers/log-in'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
+import SignUpRequestHandler from './route-handlers/sign-up'
 
 // ENUMS
 
@@ -25,11 +28,6 @@ enum ImageUploadingHandlingReportStatus {
 
 
 // INTERFACES
-
-interface AccountSubmissionInfo {
-    username?: string,
-    password?: string
-}
 
 interface ImageUploadingHandlingReport {
     status?: ImageUploadingHandlingReportStatus,
@@ -88,74 +86,8 @@ SERVER.get("/fonts/*", async (request, reply) => {
     }
 })
 
-function GenerateSessionID(): string {
-    return uuidv4()
-}
-
-function GenerateAlbumId(): string {
-    return uuidv4()
-}
-
-SERVER.post("/log-in", async (request, reply) => {
-    
-    let account_submission_info = (request.body as AccountSubmissionInfo)
-
-    let username_credential_is_missing = !(account_submission_info?.username)
-    let password_credential_is_missing = !(account_submission_info?.password)
-    
-    if (username_credential_is_missing || password_credential_is_missing) {
-        return reply.code(Globals.HttpStatusCode.BadRequest).send('MISSING ACCOUNT INFO')
-    }
-
-    /* if account info is submitted completely */
-
-    let username = account_submission_info.username
-    let password = account_submission_info.password
-    const account_exists = await DatabaseQueries.QueryAccountInfo(username, password)
-
-    if (account_exists) {
-        let session_id = GenerateSessionID()
-        await DatabaseQueries.SaveSession(username, session_id)
-        let set_cookie_value = `sessionid=${session_id}`
-        return reply.header('set-cookie', set_cookie_value).send(Globals.HttpStatusCode.Ok)
-    }
-
-    else /* if the account does not exists */ {
-        reply.code(Globals.HttpStatusCode.NotFound)
-    }
-        
-})
-
-SERVER.post("/sign-up", async (request, reply) => {
-
-    let account_submission_info = (request.body as AccountSubmissionInfo)
-
-    let username_credential_is_missing = !(account_submission_info?.username)
-    let password_credential_is_missing = !(account_submission_info?.password)
-    
-    if (username_credential_is_missing || password_credential_is_missing) {
-        return reply.code(Globals.HttpStatusCode.BadRequest).send('MISSING ACCOUNT INFO')
-    }
-
-    /* if account info is submitted completely */
-
-    let username = account_submission_info.username
-    let password = account_submission_info.password
-
-    const username_exists = await DatabaseQueries.CheckUsernameIfAlreadyRegistered(username)
-    
-    if (username_exists) {
-        return reply.code(Globals.HttpStatusCode.BadRequest).send('USERNAME ALREADY EXISTS')
-    }
-
-    DatabaseQueries.RecordAccount(username, password)
-
-    let session_id = GenerateSessionID()
-    DatabaseQueries.SaveSession(username, session_id)
-
-    return reply.header('set-cookie', `sessionid=${session_id}`).code(Globals.HttpStatusCode.Ok)
-    
-})
+SERVER.post("/log-in", LogInRequestHandler)
+SERVER.post("/sign-up", SignUpRequestHandler)
 
 /**
  * The handler for clients creating a new album
@@ -174,7 +106,7 @@ SERVER.post("/new/album", async (request, reply) => {
                     if (contentType == "text/plain") {
                         let album_name = (request.body as string)
                         let username = await DatabaseQueries.GetUsernameBySessionID(cookies.sessionid)
-                        let albumid = GenerateAlbumId()
+                        let albumid = UtilsID.GenerateAlbumId()
                         await DatabaseQueries.RecordNewAlbum(username, albumid, album_name)
                         reply.code(Globals.HttpStatusCode.Ok).send(albumid).type("text/plain")
                         return
