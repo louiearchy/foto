@@ -13,6 +13,7 @@ import JSONifyCookies from './utility/jsonify-cookies'
 import UtilsFile from './utility/file'
 import UtilsID from './utility/id'
 
+import GetAlbumsListRequestHandler from './route-handlers/albums-list'
 import AssetsRouteHandler from './route-handlers/assets'
 import CreateAlbumRequestHandler from './route-handlers/create-album'
 import FontsHandler from './route-handlers/fonts'
@@ -96,37 +97,13 @@ SERVER.get("/log-in", HomepageRouteHandler)
 SERVER.get("/sign-up", HomepageRouteHandler)
 SERVER.get("/pages/*", ReactPageScriptHandler)
 SERVER.get("/assets/*", AssetsRouteHandler)
+SERVER.get("/albums", GetAlbumsListRequestHandler)
 
 SERVER.get("/fonts/*", FontsHandler)
 SERVER.post("/log-in", LogInRequestHandler)
 SERVER.post("/sign-up", SignUpRequestHandler)
 SERVER.post("/new/album", CreateAlbumRequestHandler)
 SERVER.post("/to/album/:id?", PostPictureRequestHandler)
-
-SERVER.get("/albums", async function (request, reply) {
-    if (request.headers?.cookie) {
-        let cookies = JSONifyCookies(request.headers.cookie)
-        if (cookies?.sessionid) {
-            let is_sessionid_valid = await DatabaseQueries.IsSessionIdValid(cookies.sessionid)
-            if (!is_sessionid_valid) {
-                reply.code(Globals.HttpStatusCode.Unauthorized)
-                return
-            }
-            /* if the sessionid is valid */
-            let username = await DatabaseQueries.GetUsernameBySessionID(cookies.sessionid)
-            let albums = await DatabaseQueries.GetAlbums(username)
-            reply.code(Globals.HttpStatusCode.Ok).send(albums).type("application/json")
-            return
-        }
-        else /* if there is no sessionid */ {
-            reply.code(Globals.HttpStatusCode.Unauthorized)
-            return
-        }
-    }
-    else /* if there is no cookie */ {
-        reply.code(Globals.HttpStatusCode.Unauthorized)
-    }
-})
 
 SERVER.get("/home", async function (request, reply) {
     if (request.headers?.cookie) {
