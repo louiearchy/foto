@@ -12,6 +12,7 @@ import HtmlTemplatePages from './html/template-pages'
 import JSONifyCookies from './utility/jsonify-cookies'
 import UtilsFile from './utility/file'
 
+import AssetsRouteHandler from './route-handlers/assets'
 import HomepageRouteHandler from './route-handlers/homepage'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
 
@@ -69,22 +70,7 @@ SERVER.get("/", HomepageRouteHandler)
 SERVER.get("/log-in", HomepageRouteHandler)
 SERVER.get("/sign-up", HomepageRouteHandler)
 SERVER.get("/pages/*", ReactPageScriptHandler)
-
-SERVER.get("/assets/*", async (request, reply) => {
-    let true_path_to_the_asset_file = request.url.replace("/assets/", "src/web/")
-    let asset_file_exists = await UtilsFile.IsFileExisting(true_path_to_the_asset_file)
-    if (asset_file_exists) {
-        let asset_file_mime_type = UtilsFile.DeduceMimeTypeByFileExtension(true_path_to_the_asset_file)
-        if (asset_file_mime_type) {
-            reply.type(asset_file_mime_type)
-        }
-        let asset_file = await fsPromise.readFile(true_path_to_the_asset_file)
-        reply.send(asset_file)
-    }
-    else {
-        reply.code(Globals.HttpStatusCode.NotFound)
-    }
-})
+SERVER.get("/assets/*", AssetsRouteHandler)
 
 SERVER.get("/fonts/*", async (request, reply) => {
     let true_path_to_font_resource_file = path.join("built/web/", request.url)
