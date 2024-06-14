@@ -13,5 +13,5 @@ export default function HomepageRouteHandler(request: FastifyRequest, reply: Fas
             return reply.redirect('/home')
         }
     }
-    return reply.type('text/html').send(HtmlTemplatePages.homepage)
+    return reply.type('text/html').send(HtmlTemplatePages.homepage.data)
 }
