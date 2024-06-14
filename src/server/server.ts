@@ -4,7 +4,6 @@ import Fastify from 'fastify'
 import fs from 'node:fs'
 import fsPromise from 'node:fs/promises'
 
-import DatabaseQueries from './database-queries'
 import Globals from './globals'
 import { ImageUploadingHandlingReport } from './interfaces'
 import { ImageUploadingHandlingReportStatus } from './enums'
@@ -13,6 +12,7 @@ import UtilsFile from './utility/file'
 import UtilsID from './utility/id'
 
 import GetAlbumsListRequestHandler from './route-handlers/albums-list'
+import AlbumNameRouteHandler from './route-handlers/album-name'
 import AssetsRouteHandler from './route-handlers/assets'
 import CreateAlbumRequestHandler from './route-handlers/create-album'
 import FontsHandler from './route-handlers/fonts'
@@ -101,46 +101,13 @@ SERVER.get("/assets/*", AssetsRouteHandler)
 SERVER.get("/albums", GetAlbumsListRequestHandler)
 SERVER.get("/home", MainPageRequestHandler)
 SERVER.get("/album/:albumid", SpecificAlbumPageHandler)
+SERVER.get("/album/name/:albumid", AlbumNameRouteHandler)
 
 SERVER.get("/fonts/*", FontsHandler)
 SERVER.post("/log-in", LogInRequestHandler)
 SERVER.post("/sign-up", SignUpRequestHandler)
 SERVER.post("/new/album", CreateAlbumRequestHandler)
 SERVER.post("/to/album/:id?", PostPictureRequestHandler)
-
-SERVER.get("/album/name/:albumid", async function (request, reply) {
-
-    let { albumid } = (request.params as any)
-
-    if (!albumid) {
-        reply.code(Globals.HttpStatusCode.BadRequest)
-        return
-    }
-
-    if (!request.headers?.cookie) {
-        reply.code(Globals.HttpStatusCode.Unauthorized)
-        return
-    }
-
-    let cookies = JSONifyCookies(request.headers.cookie)
-
-    if (!cookies.sessionid) {
-        reply.code(Globals.HttpStatusCode.Unauthorized)
-        return
-    }
-
-    let sessionid_is_not_valid = !(await DatabaseQueries.IsSessionIdValid(cookies.sessionid))
-
-    if (sessionid_is_not_valid) {
-        reply.code(Globals.HttpStatusCode.Unauthorized)
-        return
-    }
-
-    let album_name = await DatabaseQueries.GetAlbumNameByItsAlbumID(albumid)
-    reply.code(Globals.HttpStatusCode.Ok).type("text/plain").send(album_name)
-    return
-
-})
 
 BindPathToFile("/react", "node_modules/react/umd/react.development.js", SERVER)
 BindPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", SERVER)
