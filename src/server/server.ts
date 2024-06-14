@@ -19,6 +19,7 @@ import CreateAlbumRequestHandler from './route-handlers/create-album'
 import FontsHandler from './route-handlers/fonts'
 import HomepageRouteHandler from './route-handlers/homepage'
 import LogInRequestHandler from './route-handlers/log-in'
+import MainPageRequestHandler from './route-handlers/mainpage'
 import PostPictureRequestHandler from './route-handlers/post-picture'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
 import SignUpRequestHandler from './route-handlers/sign-up'
@@ -98,30 +99,13 @@ SERVER.get("/sign-up", HomepageRouteHandler)
 SERVER.get("/pages/*", ReactPageScriptHandler)
 SERVER.get("/assets/*", AssetsRouteHandler)
 SERVER.get("/albums", GetAlbumsListRequestHandler)
+SERVER.get("/home", MainPageRequestHandler)
 
 SERVER.get("/fonts/*", FontsHandler)
 SERVER.post("/log-in", LogInRequestHandler)
 SERVER.post("/sign-up", SignUpRequestHandler)
 SERVER.post("/new/album", CreateAlbumRequestHandler)
 SERVER.post("/to/album/:id?", PostPictureRequestHandler)
-
-SERVER.get("/home", async function (request, reply) {
-    if (request.headers?.cookie) {
-        let cookies = JSONifyCookies(request.headers.cookie)
-        if (cookies?.sessionid) {
-            let is_sessionid_valid = await DatabaseQueries.IsSessionIdValid(cookies.sessionid)
-            if (!is_sessionid_valid) {
-                reply.redirect("/")
-                return
-            }
-            reply.code(Globals.HttpStatusCode.Ok).type("text/html").send(HtmlTemplatePages.mainpage.data)  
-        }
-        else /* if no sessionid is given */ {
-            reply.redirect("/")
-            return
-        }
-    }
-})
 
 /*
     Serving the album page
