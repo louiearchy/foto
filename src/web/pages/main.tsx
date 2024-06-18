@@ -44,7 +44,7 @@ function DeduceMimeTypeByFileExtension(filepath: string): string {
     switch (file_extension) {
         case "jpg":
         case "jpeg":
-            return 'image/jpg'
+            return 'image/jpeg'
         case 'png':
         case 'webp':
             return `image/${file_extension}`
@@ -53,35 +53,21 @@ function DeduceMimeTypeByFileExtension(filepath: string): string {
     }
 }
 
-function SendPhotoUploadSession(file: File): Promise<string | undefined> {
-    return new Promise( async ( resolve, reject ) => { 
-        let file_data = await file.arrayBuffer()
-        let filesize = file_data.byteLength
+function UploadPhoto(file: File): Promise<void> {
+    return new Promise( async (resolve, reject) => {
         let xhr = new XMLHttpRequest()
-        xhr.onreadystatechange = function(event) {
-            if (xhr.readyState == 4 ) {
-                if (xhr.response == 100 /* Continue */) {
-                    resolve(xhr.responseText)
-                }
-                else {
-                    resolve(undefined)
-                }
-            }
-        }
-        xhr.open('POST', `/to${window.location.pathname}`)
+        let pathname = '/to' + window.location.pathname
+        xhr.open('POST', pathname)
         xhr.setRequestHeader('Content-Type', DeduceMimeTypeByFileExtension(file.name))
-        xhr.send(file_data)
+        xhr.upload.onloadend = function() {
+            resolve()
+        }
+        let data = await file.arrayBuffer()
+        xhr.send(data)
     })
 }
 
-async function UploadPhoto(file?: File) {
-    if (file) {
-        let ready_to_go = await SendPhotoUploadSession(file)
-        console.log(ready_to_go)
-    }
-}
-
-function UploadPhotos(submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>) {
+async function UploadPhotos(submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>) {
     submission_buttons_disabled_setter(true)
     let files_to_be_uploaded = (document.getElementById('file-upload-input') as (HTMLInputElement | null))?.files
     
@@ -92,7 +78,20 @@ function UploadPhotos(submission_buttons_disabled_setter: React.Dispatch<React.S
             return
         }
         else /* if there are files to be uploaded */ {
-            UploadPhoto(files_to_be_uploaded.item(0) ?? undefined)
+            for (
+                // initialization
+                let i = 0, current_file = files_to_be_uploaded.item(i);
+
+                // condition
+                i < files_to_be_uploaded.length; 
+
+                // update expression
+                current_file = files_to_be_uploaded.item(++i)
+            ) {
+                if (current_file) {
+                    await UploadPhoto(current_file)
+                }
+            }
         }
     }
 
