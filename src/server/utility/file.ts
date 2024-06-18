@@ -31,7 +31,7 @@ function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
 
 function DeduceFileExtensionByContentType(content_type: string): string {
     switch (content_type.toLowerCase()) {
-        case "image/jpg":
+        case "image/jpeg":
         case "image/png":
         case "image/webp":
             return content_type.toLowerCase().split("/")[1]
