@@ -92,6 +92,7 @@ async function UploadPhotos(submission_buttons_disabled_setter: React.Dispatch<R
                     await UploadPhoto(current_file)
                 }
             }
+            submission_buttons_disabled_setter(false)
         }
     }
 
