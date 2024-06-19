@@ -67,7 +67,10 @@ function UploadPhoto(file: File): Promise<void> {
     })
 }
 
-async function UploadPhotos(submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>) {
+async function UploadPhotos(
+    submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>,
+    file_input_ref: React.MutableRefObject<HTMLInputElement | null>
+) {
     submission_buttons_disabled_setter(true)
     let files_to_be_uploaded = (document.getElementById('file-upload-input') as (HTMLInputElement | null))?.files
     
@@ -91,6 +94,10 @@ async function UploadPhotos(submission_buttons_disabled_setter: React.Dispatch<R
                 if (current_file) {
                     await UploadPhoto(current_file)
                 }
+            }
+            // this resets the file input
+            if (file_input_ref?.current) {
+                file_input_ref.current.value = ''
             }
             submission_buttons_disabled_setter(false)
         }
@@ -375,6 +382,7 @@ function SpecificAlbumViewNavigationBar() {
 
 function PhotosView() {
     let [submissionButtonsDisabledValue, setSubmissionButtonsDisabledValue] = React.useState(false)
+    let file_input_ref: React.MutableRefObject<HTMLInputElement | null> = React.useRef(null)
 
     return <div style={{
         height: "100%",
@@ -393,9 +401,11 @@ function PhotosView() {
                 id="file-upload-input" 
                 accept="image/webp, image/png, image/jpeg" 
                 multiple
-                disabled={submissionButtonsDisabledValue} />
+                disabled={submissionButtonsDisabledValue}
+                ref={file_input_ref}
+             />
             <button onClick={() => {
-                UploadPhotos(setSubmissionButtonsDisabledValue)
+                UploadPhotos(setSubmissionButtonsDisabledValue, file_input_ref)
             }} disabled={submissionButtonsDisabledValue}>Submit</button>
         </div>
     </div>
