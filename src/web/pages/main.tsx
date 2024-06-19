@@ -13,6 +13,13 @@ interface AlbumEntry {
     albumid: string
 }
 
+interface PhotoEntry {
+    key: string,
+    url: string
+}
+
+let dummy_key_track = 1
+
 const ALBUM_NAME_RECEIVED_EVENT = new Event('ALBUM_NAME_RECEIVED_EVENT')
 
 interface CurrentSessionValues {
@@ -53,14 +60,16 @@ function DeduceMimeTypeByFileExtension(filepath: string): string {
     }
 }
 
-function UploadPhoto(file: File): Promise<void> {
+function UploadPhoto(file: File): Promise<string> {
     return new Promise( async (resolve, reject) => {
         let xhr = new XMLHttpRequest()
         let pathname = '/to' + window.location.pathname
         xhr.open('POST', pathname)
         xhr.setRequestHeader('Content-Type', DeduceMimeTypeByFileExtension(file.name))
-        xhr.upload.onloadend = function() {
-            resolve()
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == xhr.DONE && xhr.status == 200) {
+                resolve(xhr.responseText)
+            }
         }
         let data = await file.arrayBuffer()
         xhr.send(data)
@@ -69,7 +78,9 @@ function UploadPhoto(file: File): Promise<void> {
 
 async function UploadPhotos(
     submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>,
-    file_input_ref: React.MutableRefObject<HTMLInputElement | null>
+    file_input_ref: React.MutableRefObject<HTMLInputElement | null>,
+    SetPhotos: React.Dispatch<React.SetStateAction<PhotoEntry[]>>,
+    photos: PhotoEntry[]
 ) {
     submission_buttons_disabled_setter(true)
     let files_to_be_uploaded = (document.getElementById('file-upload-input') as (HTMLInputElement | null))?.files
@@ -93,6 +104,11 @@ async function UploadPhotos(
             ) {
                 if (current_file) {
                     await UploadPhoto(current_file)
+                    let url = URL.createObjectURL(current_file)
+                    let new_photo_entry = { key: dummy_key_track.toString(), url: url }
+                    dummy_key_track++
+                    photos.push(new_photo_entry)
+                    SetPhotos([...photos])
                 }
             }
             // this resets the file input
@@ -383,6 +399,7 @@ function SpecificAlbumViewNavigationBar() {
 function PhotosView() {
     let [submissionButtonsDisabledValue, setSubmissionButtonsDisabledValue] = React.useState(false)
     let file_input_ref: React.MutableRefObject<HTMLInputElement | null> = React.useRef(null)
+    let [photos, SetPhotos] = React.useState<PhotoEntry[]>([])
 
     return <div style={{
         height: "100%",
@@ -390,7 +407,9 @@ function PhotosView() {
     }} className="flex-column">
         <div style={{
             height: "90%"
-        }}></div>
+        }}>
+            { photos.map( (photo) => <img src={photo.url} key={photo.key}/> ) } 
+        </div>
         <div className="flex center" style={{
             width: "100%",
             height: "10%",
@@ -405,7 +424,12 @@ function PhotosView() {
                 ref={file_input_ref}
              />
             <button onClick={() => {
-                UploadPhotos(setSubmissionButtonsDisabledValue, file_input_ref)
+                UploadPhotos(
+                    setSubmissionButtonsDisabledValue, 
+                    file_input_ref,
+                    SetPhotos,
+                    photos
+                )
             }} disabled={submissionButtonsDisabledValue}>Submit</button>
         </div>
     </div>
