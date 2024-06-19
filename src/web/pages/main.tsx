@@ -407,8 +407,8 @@ function PhotosView() {
     }} className="flex-column">
         <div style={{
             height: "90%"
-        }}>
-            { photos.map( (photo) => <img src={photo.url} key={photo.key}/> ) } 
+        }} id="photos-view-container">
+            { photos.map( (photo) => <img src={photo.url} key={photo.key} className="photo" /> ) } 
         </div>
         <div className="flex center" style={{
             width: "100%",
