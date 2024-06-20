@@ -216,12 +216,20 @@ button.circle {
 }
 
 #photos-view-container {
+    display: flex;
     padding: 0.2cm 0.7cm;
     box-sizing: border-box;
+    overflow-y: scroll;
+    column-gap: calc(calc(100% - 35cm) / 6);
+    flex-wrap: wrap;
+    height: 90%;
+    max-height: 90%;
+    row-gap: 0.5cm;
 }
 
 #photos-view-container > .photo {
     height: 5cm;
     width: 5cm;
     object-fit: cover;
+    border-radius: 0.2rem;
 }

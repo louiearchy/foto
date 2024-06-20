@@ -403,12 +403,10 @@ function PhotosView(props) {
     let photos = props?.photos
 
     return <div style={{
-        height: "100%",
+        height: "90%",
         width: "100%"
     }} className="flex-column">
-        <div style={{
-            height: "90%"
-        }} id="photos-view-container">
+        <div id="photos-view-container">
             { photos.map( (photo) => <img src={photo.url} key={photo.key} className="photo" /> ) } 
         </div>
         <div className="flex center" style={{
