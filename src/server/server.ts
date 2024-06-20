@@ -27,10 +27,9 @@ import SignUpRequestHandler from './route-handlers/sign-up'
 import SpecificAlbumPageHandler from './route-handlers/specific-album-page'
 
 
-// GLOBAL CONST VARIABLES
-
 const SERVER_HOST = 'localhost'
 const SERVER_PORT = 3000
+const SERVER_CONFIG = { host: SERVER_HOST, port: SERVER_PORT }
 
 const SERVER = Fastify()
 SERVER.register(require('@fastify/formbody'))
@@ -123,32 +122,26 @@ LinkPathToFile("/react-router", "node_modules/react-router/dist/umd/react-router
 LinkPathToFile("/remix-router", "node_modules/@remix-run/router/dist/router.umd.js", SERVER)
 LinkPathToFile("/jquery", "node_modules/jquery/dist/jquery.js", SERVER)
 
-function main() {
-    SERVER.listen(
-    
-        /* server options */
-        { port: SERVER_PORT, host: SERVER_HOST }, 
-    
-        /* onListen callback */
-        function (error, address) {
-            if (error) {
-                console.log(error)
-                process.exit(-1)
-            }
-            else {
-                Globals.FotoDbClient.connect()
-                console.log(`The development server is now running at http://${SERVER_HOST}:${SERVER_PORT}`)
-            }
-        }
-    
-    )
-}
-
-process.on('SIGINT', async function() {
+async function Exit(exit_code: number) {
     await Globals.FotoDbClient.end()
     Globals.DynamicReactPageManagerInstance.Save()
-    process.exit(0)
-})
+    process.exit(exit_code)
+}
+
+function OnServerListenCallback(error: Error) {
+    if (error) {
+        console.log(error)
+        Exit(-1)
+    }
+    console.log(`The development server is now running at http://${SERVER_HOST}:${SERVER_PORT}`)
+}
+
+async function main() {
+    await Globals.FotoDbClient.connect()
+    SERVER.listen(SERVER_CONFIG, OnServerListenCallback)
+}
+
+process.on('SIGINT', () => Exit(0))
 
 
 main()
