@@ -396,10 +396,11 @@ function SpecificAlbumViewNavigationBar() {
     </div>
 }
 
-function PhotosView() {
+function PhotosView(props) {
     let [submissionButtonsDisabledValue, setSubmissionButtonsDisabledValue] = React.useState(false)
     let file_input_ref: React.MutableRefObject<HTMLInputElement | null> = React.useRef(null)
-    let [photos, SetPhotos] = React.useState<PhotoEntry[]>([])
+    let SetPhotos = props?.SetPhotos
+    let photos = props?.photos
 
     return <div style={{
         height: "100%",
@@ -436,11 +437,26 @@ function PhotosView() {
 }
 
 function SpecificAlbumView() {
+    let [photos, SetPhotos] = React.useState<PhotoEntry[]>([])
+    React.useEffect( () => {
+        console.log('effect!')
+        let albumid = window.location.pathname.split('/').reverse()[0]
+        let resource_path = `/photos/${albumid}`
+        $.ajax(resource_path, {
+            method: 'GET',
+            dataType: 'json',
+            success: function (photo_urls: string[]) {
+                let photos: PhotoEntry[] = []
+                photo_urls.map( (photo_url) => photos.push({ key: (dummy_key_track++).toString(), url: photo_url }))
+                SetPhotos(photos)
+            }
+        })
+    }, [current_session_values.viewed_album])
     return <div className="flex-column" style={{
         height: "100vh"
     }}>
         <SpecificAlbumViewNavigationBar/>
-        <PhotosView/>
+        <PhotosView photos={photos} SetPhotos={SetPhotos}/>
     </div>
 }
 

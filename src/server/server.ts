@@ -20,6 +20,7 @@ import HomepageRouteHandler from './route-handlers/homepage'
 import LogInRequestHandler from './route-handlers/log-in'
 import MainPageRequestHandler from './route-handlers/mainpage'
 import PhotosRequestHandler from './route-handlers/photos'
+import PhotoRequestHandler from './route-handlers/photo'
 import PostPictureRequestHandler from './route-handlers/post-picture'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
 import SignUpRequestHandler from './route-handlers/sign-up'
@@ -107,6 +108,7 @@ SERVER.get("/home", MainPageRequestHandler)
 SERVER.get("/album/:albumid", SpecificAlbumPageHandler)
 SERVER.get("/album/name/:albumid", AlbumNameRouteHandler)
 SERVER.get("/photos/:albumid", PhotosRequestHandler)
+SERVER.get("/photo/:photo_resource", PhotoRequestHandler)
 
 SERVER.get("/fonts/*", FontsHandler)
 SERVER.post("/log-in", LogInRequestHandler)
