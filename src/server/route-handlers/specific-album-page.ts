@@ -1,9 +1,9 @@
 
 import { FastifyReply, FastifyRequest } from "fastify"
+import fsPromise from "node:fs/promises"
 
 import DatabaseQueries from "../database-queries"
 import Globals from '../globals'
-import HtmlTemplatePages from '../html/template-pages'
 import JSONifyCookies from "../utility/jsonify-cookies"
 
 export default async function SpecificAlbumPageHandler (request: FastifyRequest, reply: FastifyReply) {
@@ -34,7 +34,8 @@ export default async function SpecificAlbumPageHandler (request: FastifyRequest,
         return
     }
 
-    reply.code(Globals.HttpStatusCode.Ok).type("text/html").send(HtmlTemplatePages.mainpage.data)
+    let page = await fsPromise.readFile('src/web/html/mainpage.html')
+    reply.code(Globals.HttpStatusCode.Ok).type("text/html").send(page)
     return
 
 

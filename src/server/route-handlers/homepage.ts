@@ -1,10 +1,10 @@
 
 import { FastifyRequest, FastifyReply } from 'fastify'
+import fsPromise from 'node:fs/promises'
 
-import HtmlTemplatePages from '../html/template-pages'
 import JSONifyCookies from '../utility/jsonify-cookies'
 
-export default function HomepageRouteHandler(request: FastifyRequest, reply: FastifyReply ) {
+export default async function HomepageRouteHandler(request: FastifyRequest, reply: FastifyReply ) {
     let client_has_cookie = request.headers?.cookie != undefined
     if (client_has_cookie) {
         let cookies = JSONifyCookies(request.headers.cookie)
@@ -13,5 +13,6 @@ export default function HomepageRouteHandler(request: FastifyRequest, reply: Fas
             return reply.redirect('/home')
         }
     }
-    return reply.type('text/html').send(HtmlTemplatePages.homepage.data)
+    let page = await fsPromise.readFile('src/web/html/homepage.html')
+    return reply.type('text/html').send(page)
 }
