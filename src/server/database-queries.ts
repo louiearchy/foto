@@ -103,6 +103,13 @@ async function GetPhotosOfAlbum(username: string, albumid: string) {
     return Promise.resolve(query.rows)
 }
 
+async function GetAllPhotos(username: string) {
+    let query = await Globals.FotoDbClient.query(
+        `SELECT photoid, format FROM photos WHERE username='${username}'`
+    )
+    return Promise.resolve(query.rows)
+}
+
 async function CheckPhotoResourceOwnership(username: string, photoid: string): Promise<boolean> {
     let query = await Globals.FotoDbClient.query(
         `SELECT EXISTS (SELECT * FROM photos WHERE username='${username}' AND photoid='${photoid}')`
@@ -124,5 +131,6 @@ export default {
     GetAlbumNameByItsAlbumID,
     IsSessionIdValid,
     GetPhotosOfAlbum,
-    CheckPhotoResourceOwnership
+    CheckPhotoResourceOwnership,
+    GetAllPhotos
 }

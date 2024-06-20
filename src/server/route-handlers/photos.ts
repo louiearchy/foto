@@ -27,8 +27,13 @@ export default async function PhotosRequestHandler( request: FastifyRequest, res
 
     let username = await DatabaseQueries.GetUsernameBySessionID(cookies.sessionid)
     let albumid = (request.params as any)?.albumid ?? ''
+    let photo_entries: PhotoEntry[] = []
 
-    let photo_entries = (await DatabaseQueries.GetPhotosOfAlbum(username, albumid) as PhotoEntry[])
+    if (albumid === 'all-photos')
+        photo_entries = (await DatabaseQueries.GetAllPhotos(username) as PhotoEntry[])
+    else // if the albumid for a specific album
+        photo_entries = (await DatabaseQueries.GetPhotosOfAlbum(username, albumid) as PhotoEntry[])
+
     let photos: string[] = []
 
     photo_entries.map( (photo_entry) => {
