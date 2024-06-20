@@ -10,7 +10,7 @@ const root = ReactDOM.createRoot(rootdiv)
 
 interface AlbumEntry {
     album_name: string,
-    albumid: string
+    albumid?: string
 }
 
 interface PhotoEntry {
@@ -131,7 +131,7 @@ class PhotoNAlbumManager {
     protected alreadySuccessfullyRequestedAlbums: boolean
 
     constructor() {
-        this.albums = []
+        this.albums = [{album_name: 'All Photos', albumid: undefined}]
         this.alreadySuccessfullyRequestedAlbums = false
     }
 
@@ -160,8 +160,8 @@ class PhotoNAlbumManager {
             method: 'GET',
             dataType: 'json'
         })
-        request.done((data) => {
-            this.albums = (data as AlbumEntries)
+        request.done((albums: AlbumEntries) => {
+            this.albums.push(...albums)
             document.dispatchEvent(ALBUMS_LOADED_EVENT)
         })
         request.fail( (textstatus, error_thrown) => {
@@ -274,7 +274,8 @@ function AlbumView(props) {
             zIndex: props?.zIndex
         }}>
             { albumEntries.map( (albumEntry) => {
-                let albumlink = `/album/${albumEntry.albumid}`
+                let albumid = albumEntry?.albumid ?? 'all-photos'
+                let albumlink = `/album/${albumid}`
                 return <Album 
                     name={albumEntry.album_name} 
                     key={albumEntry.albumid}
@@ -353,6 +354,11 @@ function SpecificAlbumViewNavigationBar() {
     let [albumName, setAlbumName] = React.useState(current_session_values?.viewed_album ?? "")
 
     React.useEffect( () => {
+        
+        let albumid = window.location.pathname.split('/').reverse()[0]
+        if (albumid === 'all-photos')
+            return setAlbumName('All Photos')
+
         function updateAlbumName() {
             setAlbumName(current_session_values?.viewed_album ?? "")
         }
