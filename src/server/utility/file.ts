@@ -24,6 +24,13 @@ function DeduceMimeTypeByFileExtension(filepath: string): string | undefined {
             return "font/ttf"
         case "svg":
             return "image/svg+xml"
+        case 'jpeg':
+        case 'jpg':
+            return 'image/jpeg'
+        case 'png':
+            return 'image/png'
+        case 'webp':
+            return 'image/webp'
         default:
             return undefined
     }
