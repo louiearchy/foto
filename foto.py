@@ -188,11 +188,12 @@ def SetupTablesOnDatabase():
 
 
     create_pictures_table_cmd = """
-        CREATE TABLE IF NOT EXISTS pictures (
+        CREATE TABLE IF NOT EXISTS photos (
             username varchar(255) NOT NULL,
             albumid varchar(255) NULL,
-            pictureid varchar(255) NOT NULL,
-            PRIMARY KEY (pictureid)
+            photoid varchar(255) NOT NULL,
+            format varchar(10) NOT NULL,
+            PRIMARY KEY (photoid)
         )
     """
     cursor.execute(create_pictures_table_cmd)

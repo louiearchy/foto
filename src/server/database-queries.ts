@@ -66,11 +66,11 @@ async function IsAlbumIdValid(albumid: string): Promise<boolean> {
 }
 
 
-async function RecordNewPicture(username: string, albumid: string | undefined, pictureid: string ): Promise<void> {
-    albumid = (albumid) ? (`'${albumid}'`) : 'NULL'
+async function RecordNewPicture( username: string, album_id: string | undefined, photoid: string, format: string ): Promise<void> {
+    album_id ??= 'NULL'
     let query = await Globals.FotoDbClient.query(
         `
-            INSERT INTO pictures (username, albumid, pictureid) VALUES ('${username}', ${albumid}, '${pictureid}')
+            INSERT INTO photos ( username, albumid, photoid, format ) VALUES ( '${username}', '${album_id}', '${photoid}', '${format}')
         `
     )
     return Promise.resolve()
@@ -96,6 +96,13 @@ async function IsSessionIdValid(sessionid: string): Promise<boolean> {
     return Promise.resolve(query.rows[0]?.exists ?? false)
 }
 
+async function GetPhotosOfAlbum(username: string, albumid: string) {
+    let query = await Globals.FotoDbClient.query(
+        `SELECT photoid, format FROM photos WHERE username='${username}' AND albumid='${albumid}'`
+    )
+    return Promise.resolve(query.rows)
+}
+
 
 export default {
     QueryAccountInfo,
@@ -109,4 +116,5 @@ export default {
     GetAlbums,
     GetAlbumNameByItsAlbumID,
     IsSessionIdValid,
+    GetPhotosOfAlbum
 }

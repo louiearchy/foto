@@ -15,10 +15,15 @@ export default async function PostPictureRequestHandler ( request: FastifyReques
         reply.code(Globals.HttpStatusCode.Unauthorized)
         return
     }
-    if (body.status == ImageUploadingHandlingReportStatus.Successful) {
+    if (
+        body.status == ImageUploadingHandlingReportStatus.Successful &&
+        body?.photo_format                                           &&
+        body?.photo_id
+    ) {
         let cookies = JSONifyCookies(request.headers.cookie)
         let username = await DatabaseQueries.GetUsernameBySessionID(cookies?.sessionid)
-        await DatabaseQueries.RecordNewPicture(username, (request.params as any)?.id, body.filepath)
+        let albumid = (request.params as any)?.id ?? ''
+        await DatabaseQueries.RecordNewPicture(username, albumid, body.photo_id, body.photo_format)
         reply.code(Globals.HttpStatusCode.Ok)
         return
     }

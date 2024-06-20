@@ -8,5 +8,6 @@ export interface AccountSubmissionInfo {
 
 export interface ImageUploadingHandlingReport {
     status?: ImageUploadingHandlingReportStatus,
-    filepath?: string
+    photo_id?: string,
+    photo_format?: string
 }

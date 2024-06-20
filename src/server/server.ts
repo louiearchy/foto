@@ -19,6 +19,7 @@ import GetAlbumsListRequestHandler from './route-handlers/albums-list'
 import HomepageRouteHandler from './route-handlers/homepage'
 import LogInRequestHandler from './route-handlers/log-in'
 import MainPageRequestHandler from './route-handlers/mainpage'
+import PhotosRequestHandler from './route-handlers/photos'
 import PostPictureRequestHandler from './route-handlers/post-picture'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
 import SignUpRequestHandler from './route-handlers/sign-up'
@@ -75,7 +76,9 @@ SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
             return
         }
 
-        let filepath = `built/${UtilsID.GeneratePhotoSessionToken()}.${UtilsFile.DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")}`
+        let unique_photo_id = UtilsID.GeneratePhotoSessionToken()
+        let photo_format = UtilsFile.DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")
+        let filepath = `built/${unique_photo_id}.${photo_format}`
         let file_write_stream = fs.createWriteStream(filepath)
         
         payload.on('data', function (chunk: Buffer) {
@@ -85,7 +88,8 @@ SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
         payload.on('end', function () {
             file_write_stream.close()
             body.status = ImageUploadingHandlingReportStatus.Successful 
-            body.filepath = filepath
+            body.photo_id = unique_photo_id
+            body.photo_format = photo_format
             done(null, body)
             return
         })
@@ -102,6 +106,7 @@ SERVER.get("/albums", GetAlbumsListRequestHandler)
 SERVER.get("/home", MainPageRequestHandler)
 SERVER.get("/album/:albumid", SpecificAlbumPageHandler)
 SERVER.get("/album/name/:albumid", AlbumNameRouteHandler)
+SERVER.get("/photos/:albumid", PhotosRequestHandler)
 
 SERVER.get("/fonts/*", FontsHandler)
 SERVER.post("/log-in", LogInRequestHandler)
