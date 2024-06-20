@@ -9,7 +9,7 @@ import { ImageUploadingHandlingReportStatus } from '../enums'
 
 
 
-export default async function PostPictureRequestHandler ( request: FastifyRequest, reply: FastifyReply ){
+export default async function PostPictureRouteHandler ( request: FastifyRequest, reply: FastifyReply ){
     let body = (request.body as ImageUploadingHandlingReport)
     if (body?.status == ImageUploadingHandlingReportStatus.MissingAuthorization) {
         reply.code(Globals.HttpStatusCode.Unauthorized)

@@ -12,7 +12,7 @@ interface PhotoEntry {
 /**
  * Handler for requesting list of photos in a specific album
  */
-export default async function PhotosRequestHandler( request: FastifyRequest, response: FastifyReply ) {
+export default async function PhotosRouteHandler( request: FastifyRequest, response: FastifyReply ) {
     
     if (!(request.headers?.cookie))
         return response.code(Globals.HttpStatusCode.Unauthorized)

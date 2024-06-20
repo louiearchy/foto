@@ -6,7 +6,7 @@ import DatabaseQueries from '../database-queries'
 import Globals from '../globals'
 import JSONifyCookies from "../utility/jsonify-cookies"
 
-export default async function MainPageRequestHandler ( request: FastifyRequest, reply: FastifyReply ) {
+export default async function MainPageRouteHandler ( request: FastifyRequest, reply: FastifyReply ) {
     if (request.headers?.cookie) {
         let cookies = JSONifyCookies(request.headers.cookie)
         if (cookies?.sessionid) {

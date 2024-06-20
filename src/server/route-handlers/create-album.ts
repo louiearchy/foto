@@ -6,7 +6,7 @@ import Globals from '../globals'
 import JSONifyCookies from '../utility/jsonify-cookies'
 import UtilsID from '../utility/id'
 
-export default async function CreateAlbumRequestHandler( request: FastifyRequest, reply: FastifyReply ) {
+export default async function CreateAlbumRouteHandler( request: FastifyRequest, reply: FastifyReply ) {
     let clientHasCookie = request.headers?.cookie ?? false
     if (clientHasCookie) {
         let cookies = JSONifyCookies(request.headers.cookie)

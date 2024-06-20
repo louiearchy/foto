@@ -6,7 +6,7 @@ import DatabaseQueries from "../database-queries"
 import Globals from '../globals'
 import JSONifyCookies from "../utility/jsonify-cookies"
 
-export default async function SpecificAlbumPageHandler (request: FastifyRequest, reply: FastifyReply) {
+export default async function SpecificAlbumPageRouteHandler (request: FastifyRequest, reply: FastifyReply) {
     
     let { albumid } = request.params as any
 

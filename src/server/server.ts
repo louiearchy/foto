@@ -13,18 +13,18 @@ import UtilsID from './utility/id'
 
 import AlbumNameRouteHandler from './route-handlers/album-name'
 import AssetsRouteHandler from './route-handlers/assets'
-import CreateAlbumRequestHandler from './route-handlers/create-album'
-import FontsHandler from './route-handlers/fonts'
-import GetAlbumsListRequestHandler from './route-handlers/albums-list'
+import CreateAlbumRouteHandler from './route-handlers/create-album'
+import FontsRouteHandler from './route-handlers/fonts'
+import GetAlbumsListRouteHandler from './route-handlers/albums-list'
 import HomepageRouteHandler from './route-handlers/homepage'
-import LogInRequestHandler from './route-handlers/log-in'
-import MainPageRequestHandler from './route-handlers/mainpage'
-import PhotosRequestHandler from './route-handlers/photos'
-import PhotoRequestHandler from './route-handlers/photo'
-import PostPictureRequestHandler from './route-handlers/post-picture'
+import LogInRouteHandler from './route-handlers/log-in'
+import MainPageRouteHandler from './route-handlers/mainpage'
+import PhotosRouteHandler from './route-handlers/photos'
+import PhotoRouteHandler from './route-handlers/photo'
+import PostPictureRouteHandler from './route-handlers/post-picture'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
-import SignUpRequestHandler from './route-handlers/sign-up'
-import SpecificAlbumPageHandler from './route-handlers/specific-album-page'
+import SignUpRouteHandler from './route-handlers/sign-up'
+import SpecificAlbumPageRouteHandler from './route-handlers/specific-album-page'
 
 
 const SERVER_HOST = 'localhost'
@@ -102,18 +102,18 @@ SERVER.get("/log-in", HomepageRouteHandler)
 SERVER.get("/sign-up", HomepageRouteHandler)
 SERVER.get("/pages/*", ReactPageScriptHandler)
 SERVER.get("/assets/*", AssetsRouteHandler)
-SERVER.get("/albums", GetAlbumsListRequestHandler)
-SERVER.get("/home", MainPageRequestHandler)
-SERVER.get("/album/:albumid", SpecificAlbumPageHandler)
+SERVER.get("/albums", GetAlbumsListRouteHandler)
+SERVER.get("/home", MainPageRouteHandler)
+SERVER.get("/album/:albumid", SpecificAlbumPageRouteHandler)
 SERVER.get("/album/name/:albumid", AlbumNameRouteHandler)
-SERVER.get("/photos/:albumid", PhotosRequestHandler)
-SERVER.get("/photo/:photo_resource", PhotoRequestHandler)
+SERVER.get("/photos/:albumid", PhotosRouteHandler)
+SERVER.get("/photo/:photo_resource", PhotoRouteHandler)
 
-SERVER.get("/fonts/*", FontsHandler)
-SERVER.post("/log-in", LogInRequestHandler)
-SERVER.post("/sign-up", SignUpRequestHandler)
-SERVER.post("/new/album", CreateAlbumRequestHandler)
-SERVER.post("/to/album/:id?", PostPictureRequestHandler)
+SERVER.get("/fonts/*", FontsRouteHandler)
+SERVER.post("/log-in", LogInRouteHandler)
+SERVER.post("/sign-up", SignUpRouteHandler)
+SERVER.post("/new/album", CreateAlbumRouteHandler)
+SERVER.post("/to/album/:id?", PostPictureRouteHandler)
 
 LinkPathToFile("/react", "node_modules/react/umd/react.development.js", SERVER)
 LinkPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", SERVER)

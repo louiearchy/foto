@@ -6,7 +6,7 @@ import JSONifyCookies from '../utility/jsonify-cookies'
 import UtilsFile from '../utility/file'
 import fsPromise from 'fs/promises'
 
-export default async function PhotoRequestHandler( request: FastifyRequest, reply: FastifyReply ) {
+export default async function PhotoRouteHandler( request: FastifyRequest, reply: FastifyReply ) {
     
     if (!(request.headers?.cookie))
         return reply.code(Globals.HttpStatusCode.Unauthorized)

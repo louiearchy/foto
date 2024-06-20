@@ -6,7 +6,7 @@ import DatabaseQueries from '../database-queries'
 import Globals from '../globals'
 import UtilsID from '../utility/id'
 
-export default async function LogInRequestHandler(request: FastifyRequest, reply: FastifyReply) {
+export default async function LogInRouteHandler(request: FastifyRequest, reply: FastifyReply) {
     
     let account_submission_info = (request.body as AccountSubmissionInfo)
 
