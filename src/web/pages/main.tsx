@@ -437,7 +437,6 @@ function PhotosView(props) {
 function SpecificAlbumView() {
     let [photos, SetPhotos] = React.useState<PhotoEntry[]>([])
     React.useEffect( () => {
-        console.log('effect!')
         let albumid = window.location.pathname.split('/').reverse()[0]
         let resource_path = `/photos/${albumid}`
         $.ajax(resource_path, {
