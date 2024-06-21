@@ -11,25 +11,22 @@ export default async function CreateAlbumRouteHandler( request: ExtendedFastifyR
     if (await request.IsNotOnSession())
         return reply.code(Globals.HttpStatusCode.Unauthorized)
 
-    let isWithContentType = typeof request.headers?.["content-type"] === 'string'
-    let isWithContentLength = request.headers?.["content-length"] !== undefined
-    if (isWithContentLength && isWithContentType) {
-        let contentType = request.headers["content-type"].toLowerCase()
-        if (contentType == "text/plain") {
-            let album_name = (request.body as string)
-            let username = await DatabaseQueries.GetUsernameBySessionID(request.cookies.sessionid)
-            let albumid = UtilsID.GenerateAlbumId()
-            await DatabaseQueries.RecordNewAlbum(username, albumid, album_name)
-            reply.code(Globals.HttpStatusCode.Ok).send(albumid).type("text/plain")
-            return
-        }
-        else /* if the content type is not text/plain */ {
-            reply.code(Globals.HttpStatusCode.BadRequest)
-            return
-        }
-    }
-    else /* if the request did not give the content-length and content-type */ {
-        reply.code(Globals.HttpStatusCode.BadRequest)
-        return
-    }
+    let without_content_type = !(request.headers?.['content-type'])
+    if (without_content_type)
+        return reply.code(Globals.HttpStatusCode.BadRequest)
+
+    let without_content_length = !(request.headers?.['content-length'])
+    if (without_content_length)
+        return reply.code(Globals.HttpStatusCode.BadRequest)
+
+    let not_the_expected_content_type = request.headers?.['content-type'] != 'text/plain'
+    if (not_the_expected_content_type)
+        return reply.code(Globals.HttpStatusCode.BadRequest)
+
+    let album_name = (request.body as string)
+    let username = await DatabaseQueries.GetUsernameBySessionID(request.cookies.sessionid)
+    let albumid = UtilsID.GenerateAlbumId()
+    await DatabaseQueries.RecordNewAlbum(username, albumid, album_name)
+    return reply.code(Globals.HttpStatusCode.Ok).send(albumid).type("text/plain")
+            
 }
