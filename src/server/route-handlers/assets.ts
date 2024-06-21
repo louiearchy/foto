@@ -1,10 +1,12 @@
 
+import { ExtendedFastifyRequest } from '../interfaces'
+import { FastifyReply } from 'fastify'
 import fsPromise from 'node:fs/promises'
 
 import Globals from '../globals'
 import UtilsFile from '../utility/file'
 
-export default async function AssetsRouteHandler (request, reply) {
+export default async function AssetsRouteHandler ( request: ExtendedFastifyRequest, reply: FastifyReply ) {
     let true_path_to_the_asset_file = request.url.replace("/assets/", "src/web/")
     let asset_file_exists = await UtilsFile.IsFileExisting(true_path_to_the_asset_file)
     if (asset_file_exists) {
