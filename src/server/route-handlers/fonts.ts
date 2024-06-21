@@ -12,12 +12,11 @@ export default async function FontsRouteHandler( request: FastifyRequest, reply:
     let font_resource_file_doesnt_exist = !(await UtilsFile.IsFileExisting(true_path_to_font_resource_file))
 
     if (font_resource_file_doesnt_exist)
-        return reply.code(Globals.HttpStatusCode.NotFound)
+        return reply.code(Globals.HttpStatusCode.NotFound).send()
 
-    let mime_type = UtilsFile.DeduceMimeTypeByFileExtension(true_path_to_font_resource_file)
-    if (mime_type) {
-        reply.type(mime_type)
-    }
-    let font_resource_file = await fsPromise.readFile(true_path_to_font_resource_file)
-    reply.send(font_resource_file)
+        let mime_type = UtilsFile.DeduceMimeTypeByFileExtension(true_path_to_font_resource_file)
+        let font_resource_file = await fsPromise.readFile(true_path_to_font_resource_file)
+        return reply.type(mime_type).send(font_resource_file)
+        
+
 }
