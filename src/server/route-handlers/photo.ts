@@ -1,24 +1,19 @@
 
-import { FastifyRequest, FastifyReply } from 'fastify'
+import { FastifyReply } from 'fastify'
+
 import DatabaseQueries from '../database-queries'
+import { ExtendedFastifyRequest } from '../interfaces'
 import Globals from '../globals'
 import JSONifyCookies from '../utility/jsonify-cookies'
 import UtilsFile from '../utility/file'
 import fsPromise from 'fs/promises'
 
-export default async function PhotoRouteHandler( request: FastifyRequest, reply: FastifyReply ) {
+export default async function PhotoRouteHandler( request: ExtendedFastifyRequest, reply: FastifyReply ) {
     
-    if (!(request.headers?.cookie))
+    if (await request.IsNotOnSession())
         return reply.code(Globals.HttpStatusCode.Unauthorized)
 
-    let cookies = JSONifyCookies(request.headers.cookie)
-    if (!(cookies?.sessionid))
-        return reply.code(Globals.HttpStatusCode.Unauthorized)
-
-    let is_sessionid_invalid = !(await DatabaseQueries.IsSessionIdValid(cookies.sessionid))
-    if (is_sessionid_invalid)
-        return reply.code(Globals.HttpStatusCode.Unauthorized)
-
+    let cookies = JSONifyCookies(request.headers?.cookie)
     let username = await DatabaseQueries.GetUsernameBySessionID(cookies.sessionid)
     let photo_resource = ((request.params as any)?.photo_resource as string)
     let photoid = photo_resource.split('.')[0]

@@ -1,7 +1,8 @@
 
-import { FastifyRequest, FastifyReply } from 'fastify'
+import { ExtendedFastifyRequest } from '../interfaces'
+import { FastifyReply } from 'fastify'
+
 import Globals from '../globals'
-import JSONifyCookies from '../utility/jsonify-cookies'
 import DatabaseQueries from '../database-queries'
 
 interface PhotoEntry {
@@ -12,20 +13,12 @@ interface PhotoEntry {
 /**
  * Handler for requesting list of photos in a specific album
  */
-export default async function PhotosRouteHandler( request: FastifyRequest, response: FastifyReply ) {
+export default async function PhotosRouteHandler( request: ExtendedFastifyRequest, response: FastifyReply ) {
     
-    if (!(request.headers?.cookie))
+    if (await request.IsNotOnSession())
         return response.code(Globals.HttpStatusCode.Unauthorized)
 
-    let cookies = JSONifyCookies(request.headers?.cookie)
-    if (!(cookies?.sessionid))
-        return response.code(Globals.HttpStatusCode.Unauthorized)
-
-    let is_sessionid_invalid = !(await DatabaseQueries.IsSessionIdValid(cookies.sessionid))
-    if (is_sessionid_invalid)
-        return response.code(Globals.HttpStatusCode.Unauthorized)
-
-    let username = await DatabaseQueries.GetUsernameBySessionID(cookies.sessionid)
+    let username = await DatabaseQueries.GetUsernameBySessionID(request.cookies.sessionid)
     let albumid = (request.params as any)?.albumid ?? ''
     let photo_entries: PhotoEntry[] = []
 

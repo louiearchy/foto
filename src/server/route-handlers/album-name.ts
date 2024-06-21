@@ -1,11 +1,11 @@
 
-import { FastifyReply, FastifyRequest } from "fastify"
+import { ExtendedFastifyRequest } from "../interfaces"
+import { FastifyReply } from "fastify"
 
 import DatabaseQueries from "../database-queries"
 import Globals from '../globals'
-import JSONifyCookies from "../utility/jsonify-cookies"
 
-export default async function AlbumNameRouteHandler(request: FastifyRequest, reply: FastifyReply) {
+export default async function AlbumNameRouteHandler(request: ExtendedFastifyRequest, reply: FastifyReply) {
 
     let { albumid } = (request.params as any)
 
@@ -14,24 +14,8 @@ export default async function AlbumNameRouteHandler(request: FastifyRequest, rep
         return
     }
 
-    if (!request.headers?.cookie) {
-        reply.code(Globals.HttpStatusCode.Unauthorized)
-        return
-    }
-
-    let cookies = JSONifyCookies(request.headers.cookie)
-
-    if (!cookies.sessionid) {
-        reply.code(Globals.HttpStatusCode.Unauthorized)
-        return
-    }
-
-    let sessionid_is_not_valid = !(await DatabaseQueries.IsSessionIdValid(cookies.sessionid))
-
-    if (sessionid_is_not_valid) {
-        reply.code(Globals.HttpStatusCode.Unauthorized)
-        return
-    }
+    if (await request.IsNotOnSession())
+        return reply.code(Globals.HttpStatusCode.Unauthorized)
 
     let album_name = await DatabaseQueries.GetAlbumNameByItsAlbumID(albumid)
     reply.code(Globals.HttpStatusCode.Ok).type("text/plain").send(album_name)

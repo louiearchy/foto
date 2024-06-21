@@ -4,8 +4,9 @@ import Fastify from 'fastify'
 import fs from 'node:fs'
 import fsPromise from 'node:fs/promises'
 
+import DatabaseQueries from './database-queries'
 import Globals from './globals'
-import { ImageUploadingHandlingReport } from './interfaces'
+import { ExtendedFastifyRequest, ImageUploadingHandlingReport } from './interfaces'
 import { ImageUploadingHandlingReportStatus } from './enums'
 import JSONifyCookies from './utility/jsonify-cookies'
 import UtilsFile from './utility/file'
@@ -34,6 +35,48 @@ const SERVER_CONFIG = { host: SERVER_HOST, port: SERVER_PORT }
 const SERVER = Fastify()
 SERVER.register(require('@fastify/formbody'))
 
+SERVER.addHook('onRequest', (request: ExtendedFastifyRequest, reply, done) => {
+
+    let cookies: any = {}
+
+    if (request.headers?.cookie)
+        cookies = JSONifyCookies(request.headers?.cookie)
+
+    /// We are adding a cookies property to every request object as
+    /// Fastify do not support in-built parsing of cookies into much more
+    /// programming-friendly format
+    Object.defineProperty(request, 'cookies', {
+        value: cookies,
+        enumerable: true,
+        writable: false
+    })
+
+    /// We are adding a IsNotOnSession function to every request object
+    /// for simplicity of checking if the client doesn't have a valid session id
+    Object.defineProperty(request, 'IsNotOnSession', {
+        value: async function(): Promise<boolean> {
+
+            let with_sessionid_cookie = cookies?.sessionid
+            if (!with_sessionid_cookie)
+                return Promise.resolve(true)
+
+            let is_sessionid_valid = await DatabaseQueries.IsSessionIdValid(cookies.sessionid)
+            if (!is_sessionid_valid)
+                return Promise.resolve(true)
+
+            return Promise.resolve(false)
+        }
+    })
+
+    /// We are adding a IsNotOnSession function to every request object
+    /// for simplicity of checking if the client have a valid session id
+    Object.defineProperty(request, 'IsOnSession', {
+        value: async () => !(await request.IsNotOnSession())
+    })
+
+    done()
+})
+
 /**
  * A helper function that takes care of the mechanisms in binding a request.path to
  * a specific file
@@ -56,21 +99,12 @@ function LinkPathToFile(request_path: string, filepath: string, server) {
 }
 
 // For file upload, closely related to /to/album/:id? POST request handler
-SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function (request, payload, done) {
+SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function (request: ExtendedFastifyRequest, payload, done) {
     if (/\/to\/album\//.test(request.url)) {
         
-        let missing_cookies = request.headers?.cookie === undefined
         let body: ImageUploadingHandlingReport = {}
-        
-        if (missing_cookies) {
-            body.status = ImageUploadingHandlingReportStatus.MissingAuthorization
-            done(null, body)
-            return
-        }
 
-        let cookies = JSONifyCookies(request.headers.cookie)
-
-        if (!(cookies?.sessionid)) {
+        if (!(request.cookies?.sessionid)) {
             body.status = ImageUploadingHandlingReportStatus.MissingAuthorization
             done(null, body)
             return
