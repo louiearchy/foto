@@ -13,9 +13,8 @@ export default async function SignUpRouteHandler( request: FastifyRequest, reply
     let username_credential_is_missing = !(account_submission_info?.username)
     let password_credential_is_missing = !(account_submission_info?.password)
     
-    if (username_credential_is_missing || password_credential_is_missing) {
+    if (username_credential_is_missing || password_credential_is_missing)
         return reply.code(Globals.HttpStatusCode.BadRequest).send('MISSING ACCOUNT INFO')
-    }
 
     /* if account info is submitted completely */
 
@@ -24,10 +23,8 @@ export default async function SignUpRouteHandler( request: FastifyRequest, reply
 
     const username_exists = await DatabaseQueries.CheckUsernameIfAlreadyRegistered(username)
     
-    if (username_exists) {
-        reply.code(Globals.HttpStatusCode.BadRequest).send('USERNAME ALREADY EXISTS')
-        return
-    }
+    if (username_exists)
+        return reply.code(Globals.HttpStatusCode.BadRequest).send('USERNAME ALREADY EXISTS')
 
     DatabaseQueries.RecordAccount(username, password)
 
