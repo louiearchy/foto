@@ -21,17 +21,14 @@ export default async function LogInRouteHandler(request: FastifyRequest, reply: 
 
     let username = account_submission_info.username
     let password = account_submission_info.password
-    const account_exists = await DatabaseQueries.QueryAccountInfo(username, password)
+    let account_doenst_exist = await DatabaseQueries.QueryAccountInfo(username, password)
 
-    if (account_exists) {
-        let session_id = UtilsID.GenerateSessionID()
-        await DatabaseQueries.SaveSession(username, session_id)
-        let set_cookie_value = `sessionid=${session_id}`
-        return reply.header('set-cookie', set_cookie_value).send(Globals.HttpStatusCode.Ok)
-    }
+    if (account_doenst_exist)
+        return reply.code(Globals.HttpStatusCode.NotFound)
 
-    else /* if the account does not exists */ {
-        reply.code(Globals.HttpStatusCode.NotFound)
-    }
+    let session_id = UtilsID.GenerateSessionID()
+    await DatabaseQueries.SaveSession(username, session_id)
+    let set_cookie_value = `sessionid=${session_id}`
+    return reply.header('set-cookie', set_cookie_value).send(Globals.HttpStatusCode.Ok)
         
 }
