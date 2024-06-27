@@ -42,6 +42,52 @@ a.classic:active {
     color: black;
 }
 
+a.classic-on-white, button.classic-on-white {
+    background-color: black;
+    border: none;
+    border-radius: 0.2rem;
+    color: #ffd34b;
+    font-family: 'Poppins';
+    font-size: 1em;
+    font-weight: 700;
+    padding: 0.2cm 0.5cm;
+    text-decoration: none;
+    user-select: none;
+}
+
+a.classic-on-white:focus, button.classic-on-white:focus {
+    outline: solid 0.1rem black;
+    outline-offset: 0.2rem;
+}
+
+a.classic-on-white:active, button.classic-on-white:active {
+    background-color: #ffd34b;
+    color: black;
+}
+
+label {
+    font-weight: 700;
+    margin-bottom: 0.1cm;
+}
+
+input[type='text'], input[type='password'] {
+    border: solid 0.1rem #d6d6d6; 
+    border-radius: 0.2rem;
+    font-family: 'Poppins';
+    font-weight: 400;
+    font-size: 1.1em;
+    padding: 0.2cm 0.5cm;
+}
+
+input[type='text'] + span.warning, input[type='password'] + span.warning {
+    color: #ff0000;
+    display: block;
+    font-family: 'Poppins';
+    font-weight: 400;
+    font-size: 0.8em;
+    height: 1em;
+}
+
 body {
     background-color: #ffd43b;
     color: black;
@@ -161,6 +207,15 @@ body *::selection {
 
 #navigation-link-container > a.classic {
     margin: 0 0.2cm;
+}
+
+#form-container {
+    background-color: white;
+    border-radius: 0.2rem;
+    box-sizing: border-box;
+    height: 90%;
+    padding: 0.8cm;
+    width: 35%;
 }
 
 @media all and (max-width: 500px) {

@@ -12,6 +12,21 @@ function ClassicNavigationLink(
         style={style}>{children}</ReactRouterDOM.Link>
 }
 
+function ClassicOnWhiteNavigationLink(
+    {href, children, style}: { href: string, children: any, style?: React.CSSProperties }
+) {
+    return <ReactRouterDOM.Link
+        to={href}
+        className='classic-on-white'
+        style={style}>{children}</ReactRouterDOM.Link>
+}
+
+function ClassicOnWhiteButton(
+    {onClick, children, style}: {onClick?: () => void, children: any, style?: React.CSSProperties}
+) {
+    return <button className='classic-on-white' style={style} onClick={onClick}>{children}</button>
+}
+
 function PhotoCard() {
     return <div className='photo-card'>
         <div className='rect'></div>
@@ -48,10 +63,56 @@ function Homepage() {
             </div>
 }
 
+function TextInput(
+    { label, style, width, warningmsg }: { 
+        label: string, 
+        style?: React.CSSProperties, 
+        width?: string,
+        warningmsg?: string
+    }
+) {
+    return <div className='block' style={style}>
+        <label htmlFor={label.toLowerCase()} className='block'>{label}</label>
+        <input type='text' style={{ width: width }} />
+        <span className='warning'>{warningmsg}</span>
+    </div>
+}
+
+function LogInPage() {
+    return <div className='flex-column' 
+        style={{ 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            height: '100vh',
+            width: '100vw'
+        }}>
+        <div id='form-container'>
+            <ClassicOnWhiteNavigationLink href={'/'}>Back to Homepage</ClassicOnWhiteNavigationLink>
+            <div style={{ 
+                width: '100%',
+                textAlign: 'left',
+                position: 'relative',
+                top: '1.2cm',
+            }}>
+                <span style={{ fontWeight: 700, fontSize: '1.7em' }}>Welcome back to foto!</span><br/>
+                <span>You are now logging in back to your account</span></div>
+            <div style={{ position: 'relative', top: '2cm' }}>
+                <TextInput width='50%' label='Username' style={{ marginBottom: '0.5cm' }}/> 
+                <TextInput width='50%' label='Password'/>
+                <ClassicOnWhiteButton style={{ position: 'relative', top: '1cm' }}>Log In</ClassicOnWhiteButton>
+            </div>
+        </div>
+    </div>
+}
+
 const router = ReactRouterDOM.createBrowserRouter([
     {
         path: '/',
         element: <Homepage/> 
+    },
+    {
+        path: '/log-in',
+        element: <LogInPage/>
     }
 ])
 
