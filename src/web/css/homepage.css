@@ -216,6 +216,17 @@ body *::selection {
     height: 90%;
     padding: 0.8cm;
     width: 35%;
+    min-width: 10cm;
+    max-width: 12cm;
+}
+
+#form-container span:first-child {
+    font-weight: 700;
+    font-size: 1.7em;
+}
+
+#form-container input[type='text'] {
+    width: 70%;
 }
 
 @media all and (max-width: 500px) {
@@ -257,6 +268,17 @@ body *::selection {
     }
     #navigation-link-container > a.classic {
         margin: 0.2cm 0;
+    }
+    #form-container {
+        width: 20%;
+        min-width: 9cm;
+        padding: 0.8cm 0.6cm;
+    }
+    #form-container span:first-child {
+        font-size: 1.3em;
+    }
+    #form-container input[type='text'] {
+        width: 70%;
     }
 }
 

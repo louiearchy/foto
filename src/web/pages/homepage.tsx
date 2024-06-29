@@ -64,16 +64,15 @@ function Homepage() {
 }
 
 function TextInput(
-    { label, style, width, warningmsg }: { 
+    { label, style, warningmsg }: { 
         label: string, 
-        style?: React.CSSProperties, 
-        width?: string,
+        style?: React.CSSProperties,
         warningmsg?: string
     }
 ) {
     return <div className='block' style={style}>
         <label htmlFor={label.toLowerCase()} className='block'>{label}</label>
-        <input type='text' style={{ width: width }} />
+        <input type='text'/>
         <span className='warning'>{warningmsg}</span>
     </div>
 }
@@ -94,11 +93,11 @@ function LogInPage() {
                 position: 'relative',
                 top: '1.2cm',
             }}>
-                <span style={{ fontWeight: 700, fontSize: '1.7em' }}>Welcome back to foto!</span><br/>
+                <span>Welcome back to foto!</span><br/>
                 <span>You are now logging in back to your account</span></div>
             <div style={{ position: 'relative', top: '2cm' }}>
-                <TextInput width='50%' label='Username' style={{ marginBottom: '0.5cm' }}/> 
-                <TextInput width='50%' label='Password'/>
+                <TextInput label='Username' style={{ marginBottom: '0.5cm' }}/> 
+                <TextInput label='Password'/>
                 <ClassicOnWhiteButton style={{ position: 'relative', top: '1cm' }}>Log In</ClassicOnWhiteButton>
             </div>
         </div>
