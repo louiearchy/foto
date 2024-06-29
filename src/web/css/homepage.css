@@ -79,6 +79,12 @@ input[type='text'], input[type='password'] {
     padding: 0.2cm 0.5cm;
 }
 
+input[type='text']:focus, input[type='password']:focus {
+    border-color: #ffd34b;
+    outline: solid 0.01rem #ffd34b;
+    outline-offset: 0.1rem;
+}
+
 input[type='text'] + span.warning, input[type='password'] + span.warning {
     color: #ff0000;
     display: block;
