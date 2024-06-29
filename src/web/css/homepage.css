@@ -160,6 +160,11 @@ body *::selection {
     top: 0.7cm;
 }
 
+@keyframes fade-in {
+    to {
+        opacity: 1;
+    }
+}
 @keyframes photo-card-first-child-animation {
     to {
         left: 1.2cm;
@@ -218,6 +223,13 @@ body *::selection {
     width: 35%;
     min-width: 10cm;
     max-width: 12cm;
+}
+
+.fade-in {
+    animation-name: fade-in;
+    animation-duration: 500ms;
+    animation-fill-mode: forwards;
+    opacity: 0;
 }
 
 #form-container span:first-child {

@@ -13,11 +13,12 @@ function ClassicNavigationLink(
 }
 
 function ClassicOnWhiteNavigationLink(
-    {href, children, style}: { href: string, children: any, style?: React.CSSProperties }
+    {href, children, style, className}: { href: string, children: any, style?: React.CSSProperties, className?: string }
 ) {
+    let classname_value = 'classic-on-white ' + (className ?? '')
     return <ReactRouterDOM.Link
         to={href}
-        className='classic-on-white'
+        className={classname_value}
         style={style}>{children}</ReactRouterDOM.Link>
 }
 
@@ -85,17 +86,23 @@ function LogInPage() {
             height: '100vh',
             width: '100vw'
         }}>
-        <div id='form-container'>
-            <ClassicOnWhiteNavigationLink href={'/'}>Back to Homepage</ClassicOnWhiteNavigationLink>
-            <div style={{ 
+        <div id='form-container' className='fade-in'>
+            <ClassicOnWhiteNavigationLink className='fade-in' style={{ animationDelay: '200ms' }} href={'/'}>Back to Homepage</ClassicOnWhiteNavigationLink>
+            <div className='fade-in' style={{ 
                 width: '100%',
                 textAlign: 'left',
                 position: 'relative',
                 top: '1.2cm',
+                animationDelay: '250ms'
             }}>
                 <span>Welcome back to foto!</span><br/>
-                <span>You are now logging in back to your account</span></div>
-            <div style={{ position: 'relative', top: '2cm' }}>
+                <span>You are now logging in back to your account</span>
+            </div>
+            <div className='fade-in' style={{ 
+                position: 'relative', 
+                top: '2cm', 
+                animationDelay: '300ms'
+            }}>
                 <TextInput label='Username' style={{ marginBottom: '0.5cm' }}/> 
                 <TextInput label='Password'/>
                 <ClassicOnWhiteButton style={{ position: 'relative', top: '1cm' }}>Log In</ClassicOnWhiteButton>
