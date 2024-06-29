@@ -78,14 +78,16 @@ function TextInput(
     </div>
 }
 
-function LogInPage() {
-    return <div className='flex-column' 
-        style={{ 
-            alignItems: 'center', 
+function AccountSignInPrompt(
+    { title, short_info, action }: { title: string, short_info: string, action: string }
+) {
+    return <div className='flex-column'
+        style={{
+            alignItems: 'center',
             justifyContent: 'center',
             height: '100vh',
             width: '100vw'
-        }}>
+    }}>
         <div id='form-container' className='fade-in'>
             <ClassicOnWhiteNavigationLink className='fade-in' style={{ animationDelay: '200ms' }} href={'/'}>Back to Homepage</ClassicOnWhiteNavigationLink>
             <div className='fade-in' style={{ 
@@ -95,8 +97,8 @@ function LogInPage() {
                 top: '1.2cm',
                 animationDelay: '250ms'
             }}>
-                <span>Welcome back to foto!</span><br/>
-                <span>You are now logging in back to your account</span>
+                <span>{title}</span><br/>
+                <span>{short_info}</span>
             </div>
             <div className='fade-in' style={{ 
                 position: 'relative', 
@@ -105,10 +107,25 @@ function LogInPage() {
             }}>
                 <TextInput label='Username' style={{ marginBottom: '0.5cm' }}/> 
                 <TextInput label='Password'/>
-                <ClassicOnWhiteButton style={{ position: 'relative', top: '1cm' }}>Log In</ClassicOnWhiteButton>
+                <ClassicOnWhiteButton style={{ position: 'relative', top: '1cm' }}>{action}</ClassicOnWhiteButton>
             </div>
         </div>
     </div>
+}
+function LogInPage() {
+    return <AccountSignInPrompt 
+                title='Welcome back to foto!'
+                short_info='You are now logging in back to your account'
+                action='Log In'
+           />
+}
+
+function SignUpPage() {
+    return <AccountSignInPrompt
+                title="It's your first time here in foto!"
+                short_info='You are now signing up for an account'
+                action='Sign Up'
+            />
 }
 
 const router = ReactRouterDOM.createBrowserRouter([
@@ -119,6 +136,10 @@ const router = ReactRouterDOM.createBrowserRouter([
     {
         path: '/log-in',
         element: <LogInPage/>
+    },
+    {
+        path: '/sign-up',
+        element: <SignUpPage/>
     }
 ])
 
