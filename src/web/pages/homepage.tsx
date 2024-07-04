@@ -3,6 +3,107 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import ReactRouterDOM from 'react-router-dom'
 
+/**
+ * an HTMLInputElement that is possible to be null
+*/
+type NHTMLInputElement = HTMLInputElement | null
+
+type SetStringStateFunction = React.Dispatch<React.SetStateAction<string>>
+
+type AccountAPIFunction = (
+    username_field: NHTMLInputElement, 
+    password_field: NHTMLInputElement, 
+    setUsernameWarningMsg: SetStringStateFunction,
+    setPasswordWarningMsg: SetStringStateFunction
+) => void
+
+type TextInputProps = {
+    label?: string,
+    style?: React.CSSProperties,
+    warningmsg: string,
+    setWarningMsg: SetStringStateFunction
+}
+
+namespace AccountAPI {
+
+    const username_char_requirements = {
+        min: 4,
+        max: 10
+    }
+    const password_char_requirements = {
+        min: 4,
+        max: 30
+    }
+
+    function ValidateFields(
+        username_field: HTMLInputElement, 
+        password_field: HTMLInputElement,
+        setUsernameWarningMsg: SetStringStateFunction,
+        setPasswordWarningMsg: SetStringStateFunction
+    ): boolean {
+
+        let username = username_field.value
+        let password = password_field.value
+        let return_early = false
+
+        if (username.length < username_char_requirements.min) {
+            setUsernameWarningMsg('Username should be at least 4 characters')
+            return_early = true
+        }
+            
+        if (username.length > username_char_requirements.max) {
+            setUsernameWarningMsg('Username should be at a maximum 10 characters')
+            return_early = true
+        }
+
+        if (password.length < password_char_requirements.min) {
+            setPasswordWarningMsg('Password should be at least 4 characters')
+            return_early = true
+        }
+
+        if (password.length > password_char_requirements.max) {
+            setPasswordWarningMsg('Passwhord should be at a maximum 30 characters')
+            return_early = true
+        }
+
+        return return_early
+
+    }
+
+    export function LogIn(
+        username_field: NHTMLInputElement, 
+        password_field: NHTMLInputElement,
+        setUsernameWarningMsg: SetStringStateFunction,
+        setPasswordWarningMsg: SetStringStateFunction
+    ) {
+
+        if (username_field && password_field) {
+            let should_return_early = ValidateFields(username_field, password_field, setUsernameWarningMsg, setPasswordWarningMsg)
+            if (should_return_early)
+                return
+        }
+        else /* if either of the fields are null */ 
+            return
+        
+        
+    }
+    export function SignUp(
+        username_field: NHTMLInputElement, 
+        password_field: NHTMLInputElement,
+        setUsernameWarningMsg: SetStringStateFunction,
+        setPasswordWarningMsg: SetStringStateFunction
+    ) {
+        if (username_field && password_field) {
+            let should_return_early = ValidateFields(username_field, password_field, setUsernameWarningMsg, setPasswordWarningMsg)
+            if (should_return_early)
+                return
+        }
+        else /* if either of the fields are null */ {
+            return
+        }
+    }
+}
+
 function ClassicNavigationLink(
     {href, children, style}: { href: string, children: any, style?: React.CSSProperties | undefined }
 ) {
@@ -64,23 +165,41 @@ function Homepage() {
             </div>
 }
 
-function TextInput(
-    { label, style, warningmsg }: { 
-        label: string, 
-        style?: React.CSSProperties,
-        warningmsg?: string
-    }
+
+
+const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
+    { label, style, warningmsg, setWarningMsg },
+    ref
 ) {
-    return <div className='block' style={style}>
-        <label htmlFor={label.toLowerCase()} className='block'>{label}</label>
-        <input type='text'/>
-        <span className='warning'>{warningmsg}</span>
-    </div>
-}
+    return (
+        <div className='block' style={style}>
+            <label htmlFor={label?.toLowerCase()} className='block'>{label}</label>
+            <input type='text' ref={ref} onChange={ () => setWarningMsg('') } />
+            <span className='warning'>{warningmsg}</span>
+        </div>
+    )
+})
 
 function AccountSignInPrompt(
-    { title, short_info, action }: { title: string, short_info: string, action: string }
+    { 
+        title, 
+        short_info, 
+        action,
+        action_function
+    }: 
+    { 
+        title: string, 
+        short_info: string, 
+        action: string, 
+        action_function: AccountAPIFunction
+    }
 ) {
+
+    let username_field_ref = React.useRef<HTMLInputElement>(null)
+    let password_field_ref = React.useRef<HTMLInputElement>(null)
+    let [username_warning_msg, setUsernameWarningMsg] = React.useState<string>('')
+    let [password_warning_msg, setPasswordWarningMsg] = React.useState<string>('')
+
     return <div className='flex-column'
         style={{
             alignItems: 'center',
@@ -105,9 +224,32 @@ function AccountSignInPrompt(
                 top: '2cm', 
                 animationDelay: '300ms'
             }}>
-                <TextInput label='Username' style={{ marginBottom: '0.5cm' }}/> 
-                <TextInput label='Password'/>
-                <ClassicOnWhiteButton style={{ position: 'relative', top: '1cm' }}>{action}</ClassicOnWhiteButton>
+                <TextInput 
+                    ref={username_field_ref} 
+                    warningmsg={username_warning_msg} 
+                    setWarningMsg={setUsernameWarningMsg}
+                    label='Username' 
+                    style={{ marginBottom: '0.5cm' }}
+                /> 
+                <TextInput 
+                    ref={password_field_ref} 
+                    warningmsg={password_warning_msg} 
+                    setWarningMsg={setPasswordWarningMsg}
+                    label='Password'
+                />
+                <ClassicOnWhiteButton 
+                    onClick={
+                        () => action_function(
+                            username_field_ref.current, 
+                            password_field_ref.current, 
+                            setUsernameWarningMsg, 
+                            setPasswordWarningMsg
+                        )
+                    }
+                    style={{ position: 'relative', top: '1cm' }}
+                >
+                    {action}
+                </ClassicOnWhiteButton>
             </div>
         </div>
     </div>
@@ -117,6 +259,7 @@ function LogInPage() {
                 title='Welcome back to foto!'
                 short_info='You are now logging in back to your account'
                 action='Log In'
+                action_function={AccountAPI.LogIn}
            />
 }
 
@@ -125,6 +268,7 @@ function SignUpPage() {
                 title="It's your first time here in foto!"
                 short_info='You are now signing up for an account'
                 action='Sign Up'
+                action_function={AccountAPI.SignUp}
             />
 }
 
