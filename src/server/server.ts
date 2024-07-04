@@ -15,7 +15,6 @@ import UtilsID from './utility/id'
 import AlbumNameRouteHandler from './route-handlers/album-name'
 import AssetsRouteHandler from './route-handlers/assets'
 import CreateAlbumRouteHandler from './route-handlers/create-album'
-import FontsRouteHandler from './route-handlers/fonts'
 import GetAlbumsListRouteHandler from './route-handlers/albums-list'
 import HomepageRouteHandler from './route-handlers/homepage'
 import LogInRouteHandler from './route-handlers/log-in'
@@ -143,7 +142,6 @@ SERVER.get("/album/name/:albumid", AlbumNameRouteHandler)
 SERVER.get("/photos/:albumid", PhotosRouteHandler)
 SERVER.get("/photo/:photo_resource", PhotoRouteHandler)
 
-SERVER.get("/fonts/*", FontsRouteHandler)
 SERVER.post("/log-in", LogInRouteHandler)
 SERVER.post("/sign-up", SignUpRouteHandler)
 SERVER.post("/new/album", CreateAlbumRouteHandler)
