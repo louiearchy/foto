@@ -21,9 +21,9 @@ export default async function LogInRouteHandler(request: FastifyRequest, reply: 
 
     let username = account_submission_info.username
     let password = account_submission_info.password
-    let account_doenst_exist = await DatabaseQueries.QueryAccountInfo(username, password)
+    let account_doesnt_exist = !(await DatabaseQueries.QueryAccountInfo(username, password))
 
-    if (account_doenst_exist)
+    if (account_doesnt_exist)
         return reply.code(Globals.HttpStatusCode.NotFound)
 
     let session_id = UtilsID.GenerateSessionID()
