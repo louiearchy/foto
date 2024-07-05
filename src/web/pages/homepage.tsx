@@ -2,6 +2,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import ReactRouterDOM from 'react-router-dom'
+import $ from 'jquery'
 
 /**
  * an HTMLInputElement that is possible to be null
@@ -14,7 +15,8 @@ type AccountAPIFunction = (
     username_field: NHTMLInputElement, 
     password_field: NHTMLInputElement, 
     setUsernameWarningMsg: SetStringStateFunction,
-    setPasswordWarningMsg: SetStringStateFunction
+    setPasswordWarningMsg: SetStringStateFunction,
+    setNotificationPopupMessage: SetStringStateFunction
 ) => void
 
 type TextInputProps = {
@@ -23,6 +25,7 @@ type TextInputProps = {
     warningmsg: string,
     setWarningMsg: SetStringStateFunction
 }
+
 
 namespace AccountAPI {
 
@@ -70,33 +73,63 @@ namespace AccountAPI {
 
     }
 
-    export function LogIn(
+    function ContactServer(
+        username: string,
+        password: string,
+        action: 'log-in' | 'sign-up'
+    ): Promise<string> {
+        return new Promise( (resolve, reject) => {
+            let url = `/${action}`
+            let request = $.ajax(url, {
+                method: 'POST',
+                data: { username, password },
+                dataType: 'text',
+                statusCode: {
+                    200: () => resolve(''),
+                    404: () => resolve( (action == 'log-in') ? 'ACCOUNT DOESNT EXISTS' : 'MISSING ACCOUNT INFO'),
+                    400: () => resolve(request.responseText)
+                }
+            })
+        })
+    }
+
+    export async function LogIn(
         username_field: NHTMLInputElement, 
         password_field: NHTMLInputElement,
         setUsernameWarningMsg: SetStringStateFunction,
-        setPasswordWarningMsg: SetStringStateFunction
+        setPasswordWarningMsg: SetStringStateFunction,
+        setNotificationPopupMessage: SetStringStateFunction
     ) {
 
         if (username_field && password_field) {
             let should_return_early = ValidateFields(username_field, password_field, setUsernameWarningMsg, setPasswordWarningMsg)
             if (should_return_early)
                 return
+
+            let response = await ContactServer(username_field.value, password_field.value, 'log-in')
+            if (response == 'ACCOUNT DOESNT EXISTS')
+                setNotificationPopupMessage('Account does not exist, or the username or password may be incorrect!')
         }
         else /* if either of the fields are null */ 
             return
         
         
     }
-    export function SignUp(
+    export async function SignUp(
         username_field: NHTMLInputElement, 
         password_field: NHTMLInputElement,
         setUsernameWarningMsg: SetStringStateFunction,
-        setPasswordWarningMsg: SetStringStateFunction
+        setPasswordWarningMsg: SetStringStateFunction,
+        setNotificationPopupMessage: SetStringStateFunction
     ) {
         if (username_field && password_field) {
             let should_return_early = ValidateFields(username_field, password_field, setUsernameWarningMsg, setPasswordWarningMsg)
             if (should_return_early)
                 return
+
+            let response = await ContactServer(username_field.value, password_field.value, 'sign-up')
+            if (response == 'ACCOUNT ALREADY EXISTS') 
+                setNotificationPopupMessage(`The username with ${username_field.value} already exists, please create another one!`)
         }
         else /* if either of the fields are null */ {
             return
@@ -127,6 +160,33 @@ function ClassicOnWhiteButton(
     {onClick, children, style}: {onClick?: () => void, children: any, style?: React.CSSProperties}
 ) {
     return <button className='classic-on-white' style={style} onClick={onClick}>{children}</button>
+}
+
+
+function NotificationPopupMessage( 
+    { children } : { children: any } 
+) {
+    let notification_popup_message_ref = React.useRef<HTMLDivElement>(null)
+    let final_position_keyframe = { top: 'calc(95% - calc(1em + 0.4cm))'}
+    const PopUpKeyframes = [
+        { top: '100%'},
+        { top: 'calc(94% - calc(1em + 0.4cm)' },
+        final_position_keyframe
+    ]
+    const PopDownKeyframes = [
+        final_position_keyframe,
+        { top: '100%' }
+    ]
+    React.useEffect( () => {
+        if (notification_popup_message_ref) {
+            notification_popup_message_ref.current?.animate(PopUpKeyframes, { duration: 300, fill: 'forwards' })
+            let timeout_function_id = setTimeout(() => notification_popup_message_ref.current?.animate(PopDownKeyframes, { duration: 300, fill: 'forwards' }), 3000)
+            return () => { 
+                clearTimeout(timeout_function_id)
+            }
+        }
+    })
+    return <div id='notification-popup-message' ref={notification_popup_message_ref}>{children}</div>
 }
 
 function PhotoCard() {
@@ -199,13 +259,15 @@ function AccountSignInPrompt(
     let password_field_ref = React.useRef<HTMLInputElement>(null)
     let [username_warning_msg, setUsernameWarningMsg] = React.useState<string>('')
     let [password_warning_msg, setPasswordWarningMsg] = React.useState<string>('')
+    let [notification_popup_message, setNotificationPopupMessage] = React.useState<string>('')
 
     return <div className='flex-column'
         style={{
             alignItems: 'center',
             justifyContent: 'center',
             height: '100vh',
-            width: '100vw'
+            width: '100vw',
+            overflow: 'clip'
     }}>
         <div id='form-container' className='fade-in'>
             <ClassicOnWhiteNavigationLink className='fade-in' style={{ animationDelay: '200ms' }} href={'/'}>Back to Homepage</ClassicOnWhiteNavigationLink>
@@ -243,7 +305,8 @@ function AccountSignInPrompt(
                             username_field_ref.current, 
                             password_field_ref.current, 
                             setUsernameWarningMsg, 
-                            setPasswordWarningMsg
+                            setPasswordWarningMsg,
+                            setNotificationPopupMessage,
                         )
                     }
                     style={{ position: 'relative', top: '1cm' }}
@@ -252,6 +315,7 @@ function AccountSignInPrompt(
                 </ClassicOnWhiteButton>
             </div>
         </div>
+        { (notification_popup_message) && <NotificationPopupMessage>{notification_popup_message}</NotificationPopupMessage> }
     </div>
 }
 function LogInPage() {
