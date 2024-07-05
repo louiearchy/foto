@@ -128,8 +128,8 @@ namespace AccountAPI {
                 return
 
             let response = await ContactServer(username_field.value, password_field.value, 'sign-up')
-            if (response == 'ACCOUNT ALREADY EXISTS') 
-                setNotificationPopupMessage(`The username with ${username_field.value} already exists, please create another one!`)
+            if (response == 'USERNAME ALREADY EXISTS') 
+                setNotificationPopupMessage(`The username ${username_field.value} already exists, please create another one!`)
         }
         else /* if either of the fields are null */ {
             return
