@@ -109,6 +109,8 @@ namespace AccountAPI {
             let response = await ContactServer(username_field.value, password_field.value, 'log-in')
             if (response == 'ACCOUNT DOESNT EXISTS')
                 setNotificationPopupMessage('Account does not exist, or the username or password may be incorrect!')
+            else
+                window.location.assign('/home')
         }
         else /* if either of the fields are null */ 
             return
@@ -130,6 +132,8 @@ namespace AccountAPI {
             let response = await ContactServer(username_field.value, password_field.value, 'sign-up')
             if (response == 'USERNAME ALREADY EXISTS') 
                 setNotificationPopupMessage(`The username ${username_field.value} already exists, please create another one!`)
+            else
+                window.location.assign('/home')
         }
         else /* if either of the fields are null */ {
             return
