@@ -4,9 +4,9 @@ import ReactDOM from 'react-dom/client'
 import ReactRouterDOM from 'react-router-dom'
 import $ from 'jquery'
 
-/**
- * an HTMLInputElement that is possible to be null
-*/
+/// TYPES
+/// --------------------------------------------------------------------------
+
 type NHTMLInputElement = HTMLInputElement | null
 
 type SetStringStateFunction = React.Dispatch<React.SetStateAction<string>>
@@ -26,6 +26,11 @@ type TextInputProps = {
     setWarningMsg: SetStringStateFunction
 }
 
+/// --------------------------------------------------------------------------
+
+/// --------------------------------------------------------------------------
+/// AccountAPI
+/// --------------------------------------------------------------------------
 
 namespace AccountAPI {
 
@@ -140,6 +145,11 @@ namespace AccountAPI {
         }
     }
 }
+/// --------------------------------------------------------------------------
+
+/// --------------------------------------------------------------------------
+/// Components
+/// --------------------------------------------------------------------------
 
 function ClassicNavigationLink(
     {href, children, style}: { href: string, children: any, style?: React.CSSProperties | undefined }
@@ -166,6 +176,18 @@ function ClassicOnWhiteButton(
     return <button className='classic-on-white' style={style} onClick={onClick}>{children}</button>
 }
 
+const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
+    { label, style, warningmsg, setWarningMsg },
+    ref
+) {
+    return (
+        <div className='block' style={style}>
+            <label htmlFor={label?.toLowerCase()} className='block'>{label}</label>
+            <input type='text' ref={ref} onChange={ () => setWarningMsg('') } />
+            <span className='warning'>{warningmsg}</span>
+        </div>
+    )
+})
 
 function NotificationPopupMessage( 
     { children } : { children: any } 
@@ -199,6 +221,12 @@ function PhotoCard() {
     </div>
 }
 
+/// --------------------------------------------------------------------------
+
+/// --------------------------------------------------------------------------
+/// Pages
+/// --------------------------------------------------------------------------
+
 function Homepage() {
     return <div style={{
                     height: '100vh',
@@ -231,18 +259,7 @@ function Homepage() {
 
 
 
-const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
-    { label, style, warningmsg, setWarningMsg },
-    ref
-) {
-    return (
-        <div className='block' style={style}>
-            <label htmlFor={label?.toLowerCase()} className='block'>{label}</label>
-            <input type='text' ref={ref} onChange={ () => setWarningMsg('') } />
-            <span className='warning'>{warningmsg}</span>
-        </div>
-    )
-})
+
 
 function AccountSignInPrompt(
     { 
