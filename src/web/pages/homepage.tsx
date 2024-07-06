@@ -288,7 +288,6 @@ function AccountSignInPrompt(
             justifyContent: 'center',
             height: '100vh',
             width: '100vw',
-            overflow: 'clip'
     }}>
         <div id='form-container' className='fade-in'>
             <ClassicOnWhiteNavigationLink className='fade-in' style={{ animationDelay: '200ms' }} href={'/'}>Back to Homepage</ClassicOnWhiteNavigationLink>

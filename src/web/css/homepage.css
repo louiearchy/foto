@@ -17,6 +17,10 @@
     src: url('/assets/fonts/Poppins/Poppins-Bold.ttf');
 }
 
+body {
+    overflow-y: hidden;
+}
+
 a.classic {
     background-color: white;
     border: none;
