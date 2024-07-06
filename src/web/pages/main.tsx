@@ -18,124 +18,145 @@ interface PhotoEntry {
     url: string
 }
 
-let dummy_key_track = 1
-
-const ALBUM_NAME_RECEIVED_EVENT = new Event('ALBUM_NAME_RECEIVED_EVENT')
-
-interface CurrentSessionValues {
-    viewed_album?: string
-}
-
-let current_session_values: CurrentSessionValues = {
-    viewed_album: undefined
-}
-
-function GetAlbumNameFromServer() {
-    let album_id = window.location.pathname.split("/")[2]
-    let is_viewing_specific_album = /\/album\//.test(window.location.pathname)
-
-    if (is_viewing_specific_album) {
-        $.get(`/album/name/${album_id}`, function( data ) {
-            current_session_values.viewed_album = data
-            document.dispatchEvent(ALBUM_NAME_RECEIVED_EVENT)
-        })
-    }
-}
-
-function ClearCurrentViewedAlbum() {
-    current_session_values.viewed_album = undefined
-}
-
-function DeduceMimeTypeByFileExtension(filepath: string): string {
-    let file_extension = filepath.split(".").reverse()[0].toLowerCase()
-    switch (file_extension) {
-        case "jpg":
-        case "jpeg":
-            return 'image/jpeg'
-        case 'png':
-        case 'webp':
-            return `image/${file_extension}`
-        default:
-            return 'unknown'
-    }
-}
-
-function UploadPhoto(file: File): Promise<string> {
-    return new Promise( async (resolve, reject) => {
-        let xhr = new XMLHttpRequest()
-        let pathname = '/to' + window.location.pathname
-        xhr.open('POST', pathname)
-        xhr.setRequestHeader('Content-Type', DeduceMimeTypeByFileExtension(file.name))
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState == xhr.DONE && xhr.status == 200) {
-                resolve(xhr.responseText)
-            }
-        }
-        let data = await file.arrayBuffer()
-        xhr.send(data)
-    })
-}
-
-async function UploadPhotos(
-    submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>,
-    file_input_ref: React.MutableRefObject<HTMLInputElement | null>,
-    SetPhotos: React.Dispatch<React.SetStateAction<PhotoEntry[]>>,
-    photos: PhotoEntry[]
-) {
-    submission_buttons_disabled_setter(true)
-    let files_to_be_uploaded = (document.getElementById('file-upload-input') as (HTMLInputElement | null))?.files
-    
-    if (files_to_be_uploaded) {
-        if (files_to_be_uploaded.length == 0)  {
-            alert('No files yet to be uploaded, please choose first!')
-            submission_buttons_disabled_setter(false)
-            return
-        }
-        else /* if there are files to be uploaded */ {
-            for (
-                // initialization
-                let i = 0, current_file = files_to_be_uploaded.item(i);
-
-                // condition
-                i < files_to_be_uploaded.length; 
-
-                // update expression
-                current_file = files_to_be_uploaded.item(++i)
-            ) {
-                if (current_file) {
-                    await UploadPhoto(current_file)
-                    let url = URL.createObjectURL(current_file)
-                    let new_photo_entry = { key: dummy_key_track.toString(), url: url }
-                    dummy_key_track++
-                    photos.push(new_photo_entry)
-                    SetPhotos([...photos])
-                }
-            }
-            // this resets the file input
-            if (file_input_ref?.current) {
-                file_input_ref.current.value = ''
-            }
-            submission_buttons_disabled_setter(false)
-        }
-    }
-
-}
-
 type AlbumEntries = AlbumEntry[]
 
-const ALBUMS_LOADED_EVENT = new Event('ALBUMS_LOADED_EVENT')
+var currently_viewed_album: string = ''
+var dummy_key_track = 1
 
-class PhotoNAlbumManager {
+namespace FotoBackendAPI {
 
-    public albums: AlbumEntries
-    protected alreadySuccessfullyRequestedAlbums: boolean
-
-    constructor() {
-        this.albums = [{album_name: 'All Photos', albumid: undefined}]
-        this.alreadySuccessfullyRequestedAlbums = false
+    class FotoBackendEvent extends EventTarget {
+        constructor() {
+            super()
+        }
     }
 
-    protected async RegisterNewAlbum(album_name: string): Promise<string | undefined>{
+    var albums: AlbumEntries = [{album_name: 'All Photos', albumid: undefined}]
+    var foto_backend_event = new FotoBackendEvent()
+    var events = {
+        ALBUM_NAME_RECEIVED: new Event('ALBUM_NAME_RECEIVED'),
+        ALBUMS_LOADED: new Event('ALBUMS_LOADED')
+    }
+
+    export var EventHook = foto_backend_event
+    export var Events = events
+
+    export function GetAlbums() {
+        return albums
+    }
+
+    export function GetAlbumsFromServer() {
+        let request = $.ajax('/albums', {
+            method: 'GET',
+            dataType: 'json'
+        })
+        request.done((albums_sent_by_the_server: AlbumEntries) => {
+            albums.push(...albums_sent_by_the_server)
+            foto_backend_event.dispatchEvent(events.ALBUMS_LOADED)
+        })
+        request.fail( (textstatus, error_thrown) => {
+            console.log(textstatus)
+            console.log(error_thrown)
+        })
+    }
+
+    export function GetAlbumID() {
+        return window.location.pathname.split('/').reverse()[0]
+    }
+
+    export function GetAlbumNameFromServer() {
+        let album_id = GetAlbumID()
+        let is_viewing_specific_album = /\/album\//.test(window.location.pathname)
+        let url = `/album/name/${album_id}`
+
+        if (is_viewing_specific_album) {
+            $.get(url, function( data ) {
+                currently_viewed_album = data
+                foto_backend_event.dispatchEvent(events.ALBUM_NAME_RECEIVED)
+            })
+        }
+    }
+
+    export function ClearCurrentViewedAlbum() {
+        currently_viewed_album = ''
+    }
+
+    function DeduceMimeTypeByFileExtension(filepath: string): string {
+        let file_extension = filepath.split(".").reverse()[0].toLowerCase()
+        switch (file_extension) {
+            case "jpg":
+            case "jpeg":
+                return 'image/jpeg'
+            case 'png':
+            case 'webp':
+                return `image/${file_extension}`
+            default:
+                return 'unknown'
+        }
+    }
+
+    export function UploadPhoto(file: File): Promise<string> {
+        return new Promise( async (resolve, reject) => {
+            let xhr = new XMLHttpRequest()
+            let pathname = '/to' + window.location.pathname
+            xhr.open('POST', pathname)
+            xhr.setRequestHeader('Content-Type', DeduceMimeTypeByFileExtension(file.name))
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == xhr.DONE && xhr.status == 200) {
+                    resolve(xhr.responseText)
+                }
+            }
+            let data = await file.arrayBuffer()
+            xhr.send(data)
+        })
+    }
+
+    export async function UploadPhotos(
+        submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>,
+        file_input_ref: React.MutableRefObject<HTMLInputElement | null>,
+        SetPhotos: React.Dispatch<React.SetStateAction<PhotoEntry[]>>,
+        photos: PhotoEntry[]
+    ) {
+        submission_buttons_disabled_setter(true)
+        let files_to_be_uploaded = (document.getElementById('file-upload-input') as (HTMLInputElement | null))?.files
+        
+        if (files_to_be_uploaded) {
+            if (files_to_be_uploaded.length == 0)  {
+                alert('No files yet to be uploaded, please choose first!')
+                submission_buttons_disabled_setter(false)
+                return
+            }
+            else /* if there are files to be uploaded */ {
+                for (
+                    // initialization
+                    let i = 0, current_file = files_to_be_uploaded.item(i);
+
+                    // condition
+                    i < files_to_be_uploaded.length; 
+
+                    // update expression
+                    current_file = files_to_be_uploaded.item(++i)
+                ) {
+                    if (current_file) {
+                        await UploadPhoto(current_file)
+                        let url = URL.createObjectURL(current_file)
+                        let new_photo_entry = { key: dummy_key_track.toString(), url: url }
+                        dummy_key_track++
+                        photos.push(new_photo_entry)
+                        SetPhotos([...photos])
+                    }
+                }
+                // this resets the file input
+                if (file_input_ref?.current) {
+                    file_input_ref.current.value = ''
+                }
+                submission_buttons_disabled_setter(false)
+            }
+        }
+
+    }
+    
+    async function RegisterNewAlbum(album_name: string): Promise<string | undefined>{
         return new Promise( (resolve, reject) => {
             let request = $.ajax('/new/album', {
                 method: 'POST',
@@ -154,30 +175,11 @@ class PhotoNAlbumManager {
             })
         })
     }
-
-    public GetAlbumsFromServer() {
-        let request = $.ajax('/albums', {
-            method: 'GET',
-            dataType: 'json'
-        })
-        request.done((albums: AlbumEntries) => {
-            this.albums.push(...albums)
-            document.dispatchEvent(ALBUMS_LOADED_EVENT)
-        })
-        request.fail( (textstatus, error_thrown) => {
-            console.log(textstatus)
-            console.log(error_thrown)
-        })
-    }
-
-    public isAlreadyRequestedAlbumsFromServer(): boolean {
-        return this.alreadySuccessfullyRequestedAlbums
-    }
-
-    public async CreateNewAlbum(album_name: string): Promise<void> {
-        let album_id = await this.RegisterNewAlbum(album_name)
+    
+    export async function CreateNewAlbum(album_name: string): Promise<void> {
+        let album_id = await RegisterNewAlbum(album_name)
         if (album_id) {
-            this.albums.push({
+            albums.push({
                 album_name: album_name,
                 albumid: album_id
             })
@@ -185,9 +187,8 @@ class PhotoNAlbumManager {
         return Promise.resolve()
     }
 
-}
+} // FotoBackendAPI
 
-const photoNAlbumManager = new PhotoNAlbumManager()
 
 function Album(props) {
     return <div className="album">
@@ -199,7 +200,7 @@ function Album(props) {
         <ReactRouterDOM.Link 
             to={props?.link}
             onClick={ () => {
-                current_session_values.viewed_album = props?.name
+                currently_viewed_album = props?.name
             }
             }
         >{props?.name}</ReactRouterDOM.Link>
@@ -210,19 +211,19 @@ let already_sent_albums_request = false
 
 function AlbumView(props) {
     
-    let [albumEntries, SetAlbumEntries] = React.useState<AlbumEntries>([...photoNAlbumManager.albums])
+    let [albumEntries, SetAlbumEntries] = React.useState<AlbumEntries>([...FotoBackendAPI.GetAlbums()])
     let SetCreateAlbumPromptVisibility = props?.SetCreateAlbumPromptVisibility
 
     React.useEffect( () => {
         function updateAlbumEntries() {
-            SetAlbumEntries([...photoNAlbumManager.albums])
+            SetAlbumEntries([...FotoBackendAPI.GetAlbums()])
         }
-        document.addEventListener('ALBUMS_LOADED_EVENT', updateAlbumEntries)
+        FotoBackendAPI.EventHook.addEventListener('ALBUMS_LOADED', updateAlbumEntries)
         if (!already_sent_albums_request) {
-            photoNAlbumManager.GetAlbumsFromServer()
+            FotoBackendAPI.GetAlbumsFromServer()
             already_sent_albums_request = true
         }
-        return () => document.removeEventListener('ALBUMS_LOADED_EVENT', updateAlbumEntries)
+        return () => FotoBackendAPI.EventHook.removeEventListener('ALBUMS_LOADED', updateAlbumEntries)
     })
 
     function CreateNewAlbumPrompt(props) {
@@ -247,12 +248,12 @@ function AlbumView(props) {
                     }
                     else {
                         SetCreateAlbumPromptVisibility(false)
-                        await photoNAlbumManager.CreateNewAlbum(album_name)
+                        await FotoBackendAPI.CreateNewAlbum(album_name)
                         SetAlbumEntries(
                             /* 
-                                we create a shallow copy of the photoNAlbumManager.albums
+                                we create a shallow copy of the albums
                             */
-                            [...photoNAlbumManager.albums]
+                            [...FotoBackendAPI.GetAlbums()]
                         )
                     }
                 }}>Create Album</button>
@@ -351,7 +352,7 @@ function Main() {
 let already_sent_album_name_request = false
 
 function SpecificAlbumViewNavigationBar() {
-    let [albumName, setAlbumName] = React.useState(current_session_values?.viewed_album ?? "")
+    let [albumName, setAlbumName] = React.useState(currently_viewed_album)
 
     React.useEffect( () => {
         
@@ -360,14 +361,14 @@ function SpecificAlbumViewNavigationBar() {
             return setAlbumName('All Photos')
 
         function updateAlbumName() {
-            setAlbumName(current_session_values?.viewed_album ?? "")
+            setAlbumName(currently_viewed_album)
         }
-        document.addEventListener('ALBUM_NAME_RECEIVED_EVENT', updateAlbumName)
+        FotoBackendAPI.EventHook.addEventListener('ALBUM_NAME_RECEIVED', updateAlbumName)
         if (!already_sent_album_name_request) {
-            GetAlbumNameFromServer()
+            FotoBackendAPI.GetAlbumNameFromServer()
             already_sent_album_name_request = true
         }
-        return () => document.removeEventListener('ALBUM_NAME_RECEIVED_EVENT', updateAlbumName)
+        return () => FotoBackendAPI.EventHook.removeEventListener('ALBUM_NAME_RECEIVED', updateAlbumName)
     }, [albumName])
 
 
@@ -384,7 +385,7 @@ function SpecificAlbumViewNavigationBar() {
             <ReactRouterDOM.Link 
                 to={"/home"} 
                 id="to-homepage-arrow" 
-                onClick={ () => ClearCurrentViewedAlbum() }>
+                onClick={ () => FotoBackendAPI.ClearCurrentViewedAlbum() }>
                 <img src="/assets/svgs/arrow-sm-left-svgrepo-com.svg"/>
             </ReactRouterDOM.Link>
         </div>
@@ -429,7 +430,7 @@ function PhotosView(props) {
                 ref={file_input_ref}
              />
             <button onClick={() => {
-                UploadPhotos(
+                FotoBackendAPI.UploadPhotos(
                     setSubmissionButtonsDisabledValue, 
                     file_input_ref,
                     SetPhotos,
@@ -443,9 +444,9 @@ function PhotosView(props) {
 function SpecificAlbumView() {
     let [photos, SetPhotos] = React.useState<PhotoEntry[]>([])
     React.useEffect( () => {
-        let albumid = window.location.pathname.split('/').reverse()[0]
-        let resource_path = `/photos/${albumid}`
-        $.ajax(resource_path, {
+        let albumid = FotoBackendAPI.GetAlbumID()
+        let url = `/photos/${albumid}`
+        $.ajax(url, {
             method: 'GET',
             dataType: 'json',
             success: function (photo_urls: string[]) {
@@ -454,7 +455,7 @@ function SpecificAlbumView() {
                 SetPhotos(photos)
             }
         })
-    }, [current_session_values.viewed_album])
+    }, [currently_viewed_album])
     return <div className="flex-column" style={{
         height: "100vh"
     }}>
