@@ -333,7 +333,7 @@ function Main() {
     let [isCreateAlbumPromptVisible, SetCreateAlbumPromptVisibility] = React.useState(false)
     let [popupPanelVisible, setPopupPanelVisibility] = React.useState(false)
 
-    return <div className="flex-column container-height">
+    return <div className="flex-column" style={{ height: '100vh' }}>
         <AlbumView 
             onClick={ () => { setPopupPanelVisibility(false) }} 
             zIndex={0}
