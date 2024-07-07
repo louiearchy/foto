@@ -306,12 +306,6 @@ function UserActionPanel(props) {
                         props?.setPopupPanelVisibility(false)
                     }
                 }>Create Album</button>
-                <button onClick={
-                    (e) => {
-                        e.stopPropagation()
-                        props?.setPopupPanelVisibility(false)
-                    }
-                }>Post Pictures</button>
             </div>
         }
         <button className="circle" id="popup-button" onClick={
