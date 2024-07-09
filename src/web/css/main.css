@@ -233,3 +233,48 @@ button.circle {
     object-fit: cover;
     border-radius: 0.2rem;
 }
+
+#specific-photo-view {
+    background-color: rgba(0, 0, 0, 1);
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    flex-direction: column;
+    z-index: 1;
+    position: absolute;
+}
+
+/** The container for functionality-related in viewing a specific photo **/
+#specific-photo-view > div:first-child {
+    box-sizing: border-box;
+    height: 1.4cm;
+    padding: 0.2cm 0.5cm;
+}
+
+/** The back navigation button **/
+#specific-photo-view > div:first-child > button {
+    background-color: transparent;
+    border: none;
+}
+#specific-photo-view > div:first-child > button:active {
+    outline: none;
+}
+#specific-photo-view > div:first-child > button > img {
+    height: 1cm;
+}
+
+#specific-photo-view > div:nth-child(2) {
+    box-sizing: border-box;
+    height: calc(100% - 1.4cm);
+    padding: 0.2cm 0.5cm;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+/** The photo being viewed itself **/
+#specific-photo-view > div:nth-child(2) > img {
+    height: 100%;
+    object-fit: scale-down;
+}

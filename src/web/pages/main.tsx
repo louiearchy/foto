@@ -397,18 +397,65 @@ function SpecificAlbumViewNavigationBar() {
     </div>
 }
 
-function PhotosView(props) {
+// Component used to view a specific photo in fullscreen
+// this is handled by the SpecificAlbumView parent component
+function SpecificPhotoView(
+    { 
+        currently_viewed_photo_source, 
+        HideSpecificPhotoViewComponent 
+    }: { 
+        currently_viewed_photo_source: string,
+        HideSpecificPhotoViewComponent: () => void 
+    }
+) {
+    return <div id='specific-photo-view'>
+        <div>
+            <button onClick={HideSpecificPhotoViewComponent}>
+                <img src='/assets/svgs/arrow-sm-left-svgrepo-com-white.svg'/>
+            </button>
+        </div>
+        <div><img src={currently_viewed_photo_source}/></div>
+    </div>
+} 
+
+
+function PhotosView(
+
+// expected prop components
+{
+    photos,
+    SetPhotos,
+    SetCurrentlyViewedPhoto 
+}: 
+
+// type inference for prop components
+{
+    photos: PhotoEntry[],
+    SetPhotos: React.Dispatch<React.SetStateAction<PhotoEntry[]>>,
+    SetCurrentlyViewedPhoto: React.Dispatch<React.SetStateAction<string>>
+})
+
+{
     let [submissionButtonsDisabledValue, setSubmissionButtonsDisabledValue] = React.useState(false)
     let file_input_ref: React.MutableRefObject<HTMLInputElement | null> = React.useRef(null)
-    let SetPhotos = props?.SetPhotos
-    let photos = props?.photos
 
     return <div style={{
         height: "90%",
         width: "100%"
     }} className="flex-column">
         <div id="photos-view-container">
-            { photos.map( (photo) => <img src={photo.url} key={photo.key} className="photo" /> ) } 
+            { photos.map( (photo) => {
+                return <img 
+                    src={photo.url} 
+                    key={photo.key} 
+                    className="photo" 
+                    onClick={
+                        function() {
+                            SetCurrentlyViewedPhoto(photo.url)
+                        }
+                    }
+                />
+            } ) } 
         </div>
         <div className="flex center" style={{
             width: "100%",
@@ -437,6 +484,12 @@ function PhotosView(props) {
 
 function SpecificAlbumView() {
     let [photos, SetPhotos] = React.useState<PhotoEntry[]>([])
+    let [currently_viewed_photo, SetCurrentlyViewedPhoto] = React.useState<string>('')
+    
+    function HideSpecificPhotoViewComponent() {
+        SetCurrentlyViewedPhoto('')
+    }
+
     React.useEffect( () => {
         let albumid = FotoBackendAPI.GetAlbumID()
         let url = `/photos/${albumid}`
@@ -454,7 +507,17 @@ function SpecificAlbumView() {
         height: "100vh"
     }}>
         <SpecificAlbumViewNavigationBar/>
-        <PhotosView photos={photos} SetPhotos={SetPhotos}/>
+        <PhotosView 
+            photos={photos} 
+            SetPhotos={SetPhotos} 
+            SetCurrentlyViewedPhoto={SetCurrentlyViewedPhoto}
+        />
+        {
+            (currently_viewed_photo != '') && <SpecificPhotoView 
+                                                    currently_viewed_photo_source={currently_viewed_photo}
+                                                    HideSpecificPhotoViewComponent={HideSpecificPhotoViewComponent}
+                                              />
+        }
     </div>
 }
 
