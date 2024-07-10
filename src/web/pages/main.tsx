@@ -20,8 +20,31 @@ interface PhotoEntry {
 
 type AlbumEntries = AlbumEntry[]
 
+type ListOfPhotosAction = {
+    type: 'ADD PHOTO' | 'RESET'
+    photo?: {
+        key: string,
+        url: string
+    }
+}
+
 var currently_viewed_album: string = ''
 var dummy_key_track = 1
+
+function ListOfPhotosReducer(list_of_photos: PhotoEntry[], action: ListOfPhotosAction): PhotoEntry[] {
+    switch (action.type) {
+        case 'ADD PHOTO': {
+            if (action?.photo?.key && action?.photo?.url) {
+                list_of_photos.push({key: action.photo.key, url: action.photo.url})
+                return [...list_of_photos]
+            }
+        }
+        case 'RESET':
+            return []
+        default:
+            return list_of_photos
+    }
+}
 
 namespace FotoBackendAPI {
 
@@ -114,8 +137,7 @@ namespace FotoBackendAPI {
     export async function UploadPhotos(
         submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>,
         file_input_ref: React.MutableRefObject<HTMLInputElement | null>,
-        SetPhotos: React.Dispatch<React.SetStateAction<PhotoEntry[]>>,
-        photos: PhotoEntry[]
+        ListOfPhotosDispatch: React.Dispatch<ListOfPhotosAction>
     ) {
         submission_buttons_disabled_setter(true)
         let files_to_be_uploaded = (document.getElementById('file-upload-input') as (HTMLInputElement | null))?.files
@@ -140,10 +162,13 @@ namespace FotoBackendAPI {
                     if (current_file) {
                         await UploadPhoto(current_file)
                         let url = URL.createObjectURL(current_file)
-                        let new_photo_entry = { key: dummy_key_track.toString(), url: url }
-                        dummy_key_track++
-                        photos.push(new_photo_entry)
-                        SetPhotos([...photos])
+                        ListOfPhotosDispatch({
+                            type: 'ADD PHOTO',
+                            photo: {
+                                key: (dummy_key_track++).toString(),
+                                url
+                            }
+                        })
                     }
                 }
                 // this resets the file input
@@ -423,15 +448,15 @@ function PhotosView(
 
 // expected prop components
 {
-    photos,
-    SetPhotos,
+    list_of_photos,
+    ListOfPhotosDispatch,
     SetCurrentlyViewedPhoto 
 }: 
 
 // type inference for prop components
 {
-    photos: PhotoEntry[],
-    SetPhotos: React.Dispatch<React.SetStateAction<PhotoEntry[]>>,
+    list_of_photos: PhotoEntry[],
+    ListOfPhotosDispatch: React.Dispatch<ListOfPhotosAction>,
     SetCurrentlyViewedPhoto: React.Dispatch<React.SetStateAction<string>>
 })
 
@@ -444,7 +469,7 @@ function PhotosView(
         width: "100%"
     }} className="flex-column">
         <div id="photos-view-container">
-            { photos.map( (photo) => {
+            { list_of_photos.map( (photo) => {
                 return <img 
                     src={photo.url} 
                     key={photo.key} 
@@ -474,16 +499,27 @@ function PhotosView(
                 FotoBackendAPI.UploadPhotos(
                     setSubmissionButtonsDisabledValue, 
                     file_input_ref,
-                    SetPhotos,
-                    photos
+                    ListOfPhotosDispatch,
                 )
             }} disabled={submissionButtonsDisabledValue}>Submit</button>
         </div>
     </div>
 }
 
+
+function ListOfPhotosInit(list_of_photos: PhotoEntry[]): PhotoEntry[] {
+    return list_of_photos
+}
+
+type SpecificAlbumViewReducer = React.Reducer<PhotoEntry[], ListOfPhotosAction>
+
 function SpecificAlbumView() {
-    let [photos, SetPhotos] = React.useState<PhotoEntry[]>([])
+
+    let [list_of_photos, ListOfPhotosDispatch] = React.useReducer<SpecificAlbumViewReducer, PhotoEntry[]>(
+        ListOfPhotosReducer, // reducer
+        [],                  // initialArg 
+        ListOfPhotosInit     // init
+    )
     let [currently_viewed_photo, SetCurrentlyViewedPhoto] = React.useState<string>('')
     
     function HideSpecificPhotoViewComponent() {
@@ -497,19 +533,38 @@ function SpecificAlbumView() {
             method: 'GET',
             dataType: 'json',
             success: function (photo_urls: string[]) {
-                let photos: PhotoEntry[] = []
-                photo_urls.map( (photo_url) => photos.push({ key: (dummy_key_track++).toString(), url: photo_url }))
-                SetPhotos(photos)
-            }
+
+                // we call RESET on dispatch since in the development mode, the component
+                // gets called twice even if the dependency doesn't change, because of this
+                // behavior, when we render our SpecificAlbumView, the picture gets doubled
+                // this call prevents it from happening, we cannot also rely on the cleanup
+                // function as recommended in React docs since we are dealing with asynchronicity
+                // therefore, the cleanup function won't prevent the pictures getting doubled
+                ListOfPhotosDispatch({ type: 'RESET' })
+
+                photo_urls.map( (photo_url) => 
+                    ListOfPhotosDispatch(
+                        {
+                            type: 'ADD PHOTO', 
+                            photo: { 
+                                key: (dummy_key_track++).toString(), 
+                                url: photo_url 
+                            }
+                        }
+                    ) // end of ListOfPhotosDispatch
+                ) // end of map function
+            } // end of success function
         })
     }, [currently_viewed_album])
+
+
     return <div className="flex-column" style={{
         height: "100vh"
     }}>
         <SpecificAlbumViewNavigationBar/>
         <PhotosView 
-            photos={photos} 
-            SetPhotos={SetPhotos} 
+            list_of_photos={list_of_photos}
+            ListOfPhotosDispatch={ListOfPhotosDispatch}
             SetCurrentlyViewedPhoto={SetCurrentlyViewedPhoto}
         />
         {
