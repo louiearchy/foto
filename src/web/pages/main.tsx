@@ -54,7 +54,28 @@ namespace FotoBackendAPI {
         }
     }
 
-    var albums: AlbumEntries = [{album_name: 'All Photos', albumid: undefined}]
+
+    // This is the list of albums (which is really only one) at the start where we had yet
+    // to synchronize with the server for the user's albums, all of the users of foto
+    // have an 'All Albums' album
+    var initial_albums: AlbumEntries = [{album_name: 'All Photos', albumid: undefined}]
+
+    function DeepCopyInitialAlbums() {
+        return JSON.parse(JSON.stringify(initial_albums))
+    }
+
+    // we need deep copy instead of shallow copy of the initial albums, otherwise
+    // instead of initial albums having only the initial 'All Albums' album when we reset, it
+    // would also include the added albums from the server, which makes calling the function
+    // ResetAlbums useless
+    var albums: AlbumEntries = DeepCopyInitialAlbums()
+
+    function ShallowCopyAlbums() {
+        return [...albums]
+    }
+
+    var already_sent_list_of_albums_request = false
+
     var foto_backend_event = new FotoBackendEvent()
     var events = {
         ALBUM_NAME_RECEIVED: new Event('ALBUM_NAME_RECEIVED'),
@@ -65,10 +86,19 @@ namespace FotoBackendAPI {
     export var Events = events
 
     export function GetAlbums() {
-        return albums
+        return ShallowCopyAlbums() 
+    }
+
+    export function ResetAlbums() {
+        albums = DeepCopyInitialAlbums()
     }
 
     export function GetAlbumsFromServer() {
+        
+        if (already_sent_list_of_albums_request)
+            return // ignore
+        
+        already_sent_list_of_albums_request = true
         let request = $.ajax('/albums', {
             method: 'GET',
             dataType: 'json'
@@ -81,6 +111,7 @@ namespace FotoBackendAPI {
             console.log(textstatus)
             console.log(error_thrown)
         })
+
     }
 
     export function GetAlbumID() {
@@ -232,140 +263,100 @@ function Album(props) {
     </div>
 }
 
-let already_sent_albums_request = false
 
-function AlbumView(props) {
+// This is where the user sees their created albums
+function AlbumsView() {
     
-    let [albumEntries, SetAlbumEntries] = React.useState<AlbumEntries>([...FotoBackendAPI.GetAlbums()])
-    let SetCreateAlbumPromptVisibility = props?.SetCreateAlbumPromptVisibility
+    let [list_of_albums, SetListOfAlbums] = React.useState<AlbumEntries>(FotoBackendAPI.GetAlbums())
+    let [is_create_album_prompt_visible, SetCreateAlbumPromptVisibility] = React.useState(false)
 
-    React.useEffect( () => {
-        function updateAlbumEntries() {
-            SetAlbumEntries([...FotoBackendAPI.GetAlbums()])
-        }
-        FotoBackendAPI.EventHook.addEventListener('ALBUMS_LOADED', updateAlbumEntries)
-        if (!already_sent_albums_request) {
-            FotoBackendAPI.GetAlbumsFromServer()
-            already_sent_albums_request = true
-        }
-        return () => FotoBackendAPI.EventHook.removeEventListener('ALBUMS_LOADED', updateAlbumEntries)
-    })
-
-    function CreateNewAlbumPrompt(props) {
-        let [warningMsg, setWarningMsg] = React.useState("")
-        return <div className="absolute" style={{
-            zIndex: props?.zIndex
-        }} id="create-album-prompt">
-            <h2>Create Album</h2>
-            <input type="text" id="album-name-field" onInput={
-                () => {
-                    if (warningMsg != "") {
-                        setWarningMsg("")
-                    }
-                }
-            }/>
-            <div className="flex-row">
-                <button onClick={ async () => {
-                    let album_name_field = (document.getElementById("album-name-field") as HTMLInputElement)
-                    let album_name = album_name_field.value
-                    if (album_name.length == 0) {
-                        setWarningMsg("Please input an album name first!")
-                    }
-                    else {
-                        SetCreateAlbumPromptVisibility(false)
-                        await FotoBackendAPI.CreateNewAlbum(album_name)
-                        SetAlbumEntries(
-                            /* 
-                                we create a shallow copy of the albums
-                            */
-                            [...FotoBackendAPI.GetAlbums()]
-                        )
-                    }
-                }}>Create Album</button>
-                <button onClick={ () => SetCreateAlbumPromptVisibility(false) }>Cancel</button> 
-            </div>
-            {
-                (warningMsg != "") && <div id="warning-prompt">
-                    {warningMsg}
-                </div>
-            }
-        </div>
+    // State functions
+    // --------------------------------------------------
+    function UpdateListOfAlbums() {
+        SetListOfAlbums(FotoBackendAPI.GetAlbums())
     }
 
+    function HideCreateAlbumPrompt() {
+        SetCreateAlbumPromptVisibility(false)
+    }
 
+    function ShowCreateAlbumPrompt() {
+        SetCreateAlbumPromptVisibility(true)
+    }
+    // --------------------------------------------------
 
-    return <>
-        { props?.isCreateAlbumPromptVisible && <CreateNewAlbumPrompt/> }
-        <div id="album-view" className="flex-row" onClick={props?.onClick} style={{
-            zIndex: props?.zIndex
-        }}>
-            { albumEntries.map( (albumEntry) => {
-                let albumid = albumEntry?.albumid ?? 'all-photos'
-                let albumlink = `/album/${albumid}`
-                return <Album 
-                    name={albumEntry.album_name} 
-                    key={albumEntry.albumid}
-                    link={albumlink}
-                /> 
-            })}
-        </div>
-    </>
-}
+    // Effects
+    // --------------------------------------------------
+    function SynchronizeAlbumViewWithFotoBackend() {
+        FotoBackendAPI.EventHook.addEventListener('ALBUMS_LOADED', UpdateListOfAlbums)
+        FotoBackendAPI.GetAlbumsFromServer()
+        return () => FotoBackendAPI.EventHook.removeEventListener('ALBUMS_LOADED', UpdateListOfAlbums)
+    }
 
-function UserActionPanel(props) {
-    return <div id="user-action-panel" className="flex center" onClick={
-        () => props?.setPopupPanelVisibility(false)
-    } style={{
-        zIndex: props?.zIndex
-    }}>
-        {
-            props?.popupPanelVisible && <div className="absolute flex-column" style={{
-                height: "fit-content",
-                minWidth: "fit-content",
-                bottom: "2cm"
-            }} id="popup-panel">
-                <button onClick={
-                    (e) => {
-                        e.stopPropagation()
-                        props?.SetCreateAlbumPromptVisibility(true)
-                        props?.setPopupPanelVisibility(false)
-                    }
-                }>Create Album</button>
-            </div>
+    React.useEffect(SynchronizeAlbumViewWithFotoBackend)
+    // --------------------------------------------------
+
+    // Components
+    // --------------------------------------------------
+    function CreateAlbumPrompt() {
+
+        let [warning_message, SetWarningMessage] = React.useState("")
+        let album_name_field_ref = React.useRef<HTMLInputElement | null>(null)
+
+        function ClearWarningMessage() {
+            if (warning_message != "")
+                SetWarningMessage("")
         }
-        <button className="circle" id="popup-button" onClick={
-            (e) => {
-                e.stopPropagation()
-                props?.setPopupPanelVisibility(true)
+
+        async function CreateAlbum() {
+            if (album_name_field_ref && album_name_field_ref?.current) {
+                let album_name = album_name_field_ref.current.value
+                if (album_name.length == 0) {
+                    SetWarningMessage("Please input an album name first")
+                }
+                else {
+                    HideCreateAlbumPrompt()
+                    await FotoBackendAPI.CreateNewAlbum(album_name)
+                    UpdateListOfAlbums()
+                }
             }
-        }>
-            <img src="/assets/svgs/plus.svg" style={{
-                height: '1cm',
-                width: '1cm'
-            }}/>
-        </button>
-    </div>
-}
+        }
+
+        return (
+            <div className="absolute" style={{ zIndex: 0 }} id="create-album-prompt">
+                <h2>Create Album</h2>
+                <input type="text" ref={album_name_field_ref} id="album-name-field" onInput={ClearWarningMessage}/>
+                <div className="flex-row">
+                    <button onClick={CreateAlbum}>Create Album</button>
+                    <button onClick={HideCreateAlbumPrompt}>Cancel</button> 
+                </div>
+                { (warning_message != "") && <div id="warning-prompt">{warning_message}</div> }
+            </div>
+        )
+    }
+    // --------------------------------------------------
 
 
-function Main() {
-    let [isCreateAlbumPromptVisible, SetCreateAlbumPromptVisibility] = React.useState(false)
-    let [popupPanelVisible, setPopupPanelVisibility] = React.useState(false)
 
-    return <div className="flex-column" style={{ height: '100vh' }}>
-        <AlbumView 
-            onClick={ () => { setPopupPanelVisibility(false) }} 
-            zIndex={0}
-            isCreateAlbumPromptVisible={isCreateAlbumPromptVisible}
-            SetCreateAlbumPromptVisibility={SetCreateAlbumPromptVisibility}
-        />
-        <UserActionPanel 
-            SetCreateAlbumPromptVisibility={SetCreateAlbumPromptVisibility}
-            setPopupPanelVisibility={setPopupPanelVisibility}
-            popupPanelVisible={popupPanelVisible}
-            zIndex={0}
-        />
-    </div>
+    return (
+        <div className='flex-column' style={{ height: '100vh' }}>
+            { is_create_album_prompt_visible && <CreateAlbumPrompt/> }
+            <div id="album-view" className="flex-row">
+                { 
+                    list_of_albums.map( (albumEntry) => {
+                        let albumid = albumEntry?.albumid ?? 'all-photos'
+                        let albumlink = `/album/${albumid}`
+                        return <Album 
+                            name={albumEntry.album_name} 
+                            key={albumEntry.albumid}
+                            link={albumlink}
+                        /> 
+                    })
+                }
+            </div>
+            <div className='flex center'><button onClick={ShowCreateAlbumPrompt}>Create Album</button></div>
+        </div>
+    )
 }
 
 let already_sent_album_name_request = false
@@ -579,7 +570,7 @@ function SpecificAlbumView() {
 const router = ReactRouterDOM.createBrowserRouter([
     {
         path: "/home",
-        element: <Main/>
+        element: <AlbumsView/>
     },
     {
         path: "/album/:id",

@@ -54,11 +54,6 @@ body {
     height: 90%;
 }
 
-#user-action-panel {
-    min-height: 2cm;
-    height: 10%;
-}
-
 #popup-button {
     padding: 0.2cm;
     border: none;
