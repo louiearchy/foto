@@ -1,21 +1,21 @@
 
 
 @font-face {
-    font-family: 'Work Sans';
-    font-weight: var(--regular);
-    src: url('/fonts/work_sans/static/WorkSans-Regular.ttf');
+    font-family: 'Poppins';
+    font-weight: 900;
+    src: url('/assets/fonts/Poppins/Poppins-Black.ttf');
 }
 
 @font-face {
-    font-family: 'Work Sans';
-    font-weight: var(--bold);
-    src: url('/fonts/work_sans/static/WorkSans-Bold.ttf');
+    font-family: 'Poppins';
+    font-weight: 400;
+    src: url('/assets/fonts/Poppins/Poppins-Regular.ttf');
 }
 
 @font-face {
-    font-family: 'Work Sans';
-    font-weight: var(--extra-bold);
-    src: url('/fonts/work_sans/static/WorkSans-ExtraBold.ttf');
+    font-family: 'Poppins';
+    font-weight: 700;
+    src: url('/assets/fonts/Poppins/Poppins-Bold.ttf');
 }
 
 
@@ -49,63 +49,28 @@ body {
     height: 100%;
 }
 
-#album-view {
-    min-height: 12cm;
-    height: 90%;
-}
-
-#popup-button {
-    padding: 0.2cm;
-    border: none;
-    background-color: #FFC96F;
-}
-
-#popup-button:focus {
-    background-color: #FFA62F;
-    outline: none;
-}
-
-#popup-panel {
-    border: solid 0.1rem #f2f2f2;
-    border-radius: 0.2cm;
-}
-
-#popup-panel > button {
-    background-color: white;
-    border: solid 0.01rem #f2f2f2;
-    padding: 0.2cm 0.3cm;
-    color: black;
-    border: none;
-    font-family: 'Arial', sans-serif;
-    font-size: 1em;
-}
-
-#popup-panel > button:first-child {
-    border-radius: 0.2cm 0.2cm 0 0;
-}
-
-#popup-panel > button:last-child {
-    border-radius: 0 0 0.2cm 0.2cm;
-}
-
-#popup-panel > button:hover {
-    background-color: #f2f2f2;
-}
-
-button.circle {
-    border-radius: 50%;
-}
-
 .absolute {
     position: absolute;
 }
 
-#album-view {
+#albums-view {
+    height: 100vh;
+}
+
+#albums-container {
     padding: 0.5cm;
     box-sizing: border-box;
     gap: 1cm;
     flex-wrap: wrap;
     overflow-y: scroll;
+    height: calc(100% - max(10%, 2cm));
+}
+
+/* The container for the Create Album button */
+#albums-view > div:last-child {
+    height: 10%;
+    max-height: 2cm;
+    width: 100%;
 }
 
 .album {
@@ -130,7 +95,7 @@ button.circle {
 .album > a {
     border: none;
     background-color: transparent;
-    font-family: 'Work Sans';
+    font-family: 'Poppins';
     font-size: 1.2em;
     margin-top: 0.15cm;
     color: black;
@@ -159,7 +124,7 @@ button.circle {
 }
 
 #create-album-prompt > h2 {
-    font-family: 'Work Sans';
+    font-family: 'Poppins';
     font-size: 1.9em;
     margin: 0 0 0.3cm 0;
     color: #5e5e5e;
@@ -179,7 +144,7 @@ button.circle {
 }
 
 #create-album-prompt button {
-    font-family: 'Work Sans';
+    font-family: 'Poppins';
     font-weight: 900;
     font-size: 1.2em;
     margin: 0 0.2cm;
@@ -196,7 +161,7 @@ button.circle {
 
 #create-album-prompt > #warning-prompt {
     background-color: #e3005b;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Poppins', 'Arial', sans-serif;
     color: white;
     width: 100%;
     text-align: center;
@@ -205,71 +170,94 @@ button.circle {
     box-sizing: border-box;
 }
 
-#to-homepage-arrow > img {
+#album-view {
+    height: 100vh;
+    width: 100vw;
+    box-sizing: border-box;
+    padding: 0.2cm 0.5cm;
+}
+
+#album-view-navigation-bar {
+    height: 10%;
+    max-height: 1cm;
+    width: 100%;
+}
+
+/* The container for the back button */       /* An empty space at the last of the nav bar */
+#album-view-navigation-bar > div:first-child, #album-view-navigation-bar > div:last-child    {
+    width: 10%;
+}
+
+/* The Album Name */
+#album-view-navigation-bar > div:nth-child(2) {
+    font-family: 'Poppins';
+    font-weight: 700;
+    font-size: 1.2em;
+    width: 80%;
+}
+
+/* The icon for the back button in the navbar */
+#album-view-navigation-bar > div:first-child > a > img {
     height: 1cm;
     width: 1cm;
 }
 
-#photos-view-container {
-    display: flex;
-    padding: 0.2cm 0.7cm;
+#album-view-photos-container {
+    height: 100%;
     box-sizing: border-box;
-    overflow-y: scroll;
-    column-gap: calc(calc(100% - 35cm) / 6);
-    flex-wrap: wrap;
-    height: 90%;
-    max-height: 90%;
-    row-gap: 0.5cm;
-}
-
-#photos-view-container > .photo {
-    height: 5cm;
-    width: 5cm;
-    object-fit: cover;
-    border-radius: 0.2rem;
-}
-
-#specific-photo-view {
-    background-color: rgba(0, 0, 0, 1);
-    display: flex;
-    height: 100vh;
-    width: 100vw;
-    flex-direction: column;
-    z-index: 1;
-    position: absolute;
-}
-
-/** The container for functionality-related in viewing a specific photo **/
-#specific-photo-view > div:first-child {
-    box-sizing: border-box;
-    height: 1.4cm;
-    padding: 0.2cm 0.5cm;
-}
-
-/** The back navigation button **/
-#specific-photo-view > div:first-child > button {
-    background-color: transparent;
-    border: none;
-}
-#specific-photo-view > div:first-child > button:active {
-    outline: none;
-}
-#specific-photo-view > div:first-child > button > img {
-    height: 1cm;
-}
-
-#specific-photo-view > div:nth-child(2) {
-    box-sizing: border-box;
-    height: calc(100% - 1.4cm);
-    padding: 0.2cm 0.5cm;
     display: flex;
     flex-direction: row;
-    justify-content: center;
-    align-items: center;
+    flex-wrap: wrap;
+    padding: 0.5cm 0;
 }
 
-/** The photo being viewed itself **/
-#specific-photo-view > div:nth-child(2) > img {
-    height: 100%;
-    object-fit: scale-down;
+#album-view-photos-container > img {
+    height: 4cm;
+    width: 4cm;
+    object-fit: cover;
+}
+
+#album-view-submit-container {
+    height: 10%;
+    max-height: 1cm;
+    padding: 0.5cm 0;
+}
+
+#album-view-current-viewed-photo-container {
+    display: flex;
+    background-color: rgba(0, 0, 0, 0.1);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: black;
+    z-index: 1;
+    position: absolute;
+    height: calc(100% - 0.4cm) /* taking account the padding of #album-view */;
+    width: calc(100% - 1cm) /* taking account the padding of #album-view */;
+}
+
+/* The current image being viewed */
+#album-view-current-viewed-photo-container > img {
+    height: calc(100% - max(10%, 1cm)); 
+    object-fit: contain;
+}
+
+/* The navigation bar container for the currently viewed photo */
+#album-view-current-viewed-photo-container > div:first-child {
+    height: max(10%, 1cm);
+    width: 100%;
+}
+
+/* The left arrow icon for the container of the currently viewed photo */
+#album-view-current-viewed-photo-container > div:first-child > button > img {
+    height: 1cm;
+    width: 1cm;
+}
+
+/* The back button for the container of the currently viewed photo */
+#album-view-current-viewed-photo-container > div:first-child > button {
+    background: transparent;
+}
+#album-view-current-viewed-photo-container > div:first-child > button:focus {
+    outline: none;
 }

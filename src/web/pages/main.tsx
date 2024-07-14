@@ -13,38 +13,7 @@ interface AlbumEntry {
     albumid?: string
 }
 
-interface PhotoEntry {
-    key: string,
-    url: string
-}
-
 type AlbumEntries = AlbumEntry[]
-
-type ListOfPhotosAction = {
-    type: 'ADD PHOTO' | 'RESET'
-    photo?: {
-        key: string,
-        url: string
-    }
-}
-
-var currently_viewed_album: string = ''
-var dummy_key_track = 1
-
-function ListOfPhotosReducer(list_of_photos: PhotoEntry[], action: ListOfPhotosAction): PhotoEntry[] {
-    switch (action.type) {
-        case 'ADD PHOTO': {
-            if (action?.photo?.key && action?.photo?.url) {
-                list_of_photos.push({key: action.photo.key, url: action.photo.url})
-                return [...list_of_photos]
-            }
-        }
-        case 'RESET':
-            return []
-        default:
-            return list_of_photos
-    }
-}
 
 namespace FotoBackendAPI {
 
@@ -70,6 +39,11 @@ namespace FotoBackendAPI {
     // ResetAlbums useless
     var albums: AlbumEntries = DeepCopyInitialAlbums()
 
+    var current_album_name: string = ''
+    var current_album_photos: string[] = []
+    var last_request_album_id_for_album_name = ''
+    var last_request_album_id_for_album_photos = ''
+
     function ShallowCopyAlbums() {
         return [...albums]
     }
@@ -79,11 +53,16 @@ namespace FotoBackendAPI {
     var foto_backend_event = new FotoBackendEvent()
     var events = {
         ALBUM_NAME_RECEIVED: new Event('ALBUM_NAME_RECEIVED'),
-        ALBUMS_LOADED: new Event('ALBUMS_LOADED')
+        ALBUMS_LOADED: new Event('ALBUMS_LOADED'),
+        ALBUM_PHOTOS_LOADED: new Event('ALBUM_PHOTOS_LOADED'),
     }
 
     export var EventHook = foto_backend_event
     export var Events = events
+
+    function GetCurrentAlbumID() {
+        return window.location.pathname.split('/').reverse()[0]
+    }
 
     export function GetAlbums() {
         return ShallowCopyAlbums() 
@@ -114,104 +93,6 @@ namespace FotoBackendAPI {
 
     }
 
-    export function GetAlbumID() {
-        return window.location.pathname.split('/').reverse()[0]
-    }
-
-    export function GetAlbumNameFromServer() {
-        let album_id = GetAlbumID()
-        let is_viewing_specific_album = /\/album\//.test(window.location.pathname)
-        let url = `/album/name/${album_id}`
-
-        if (is_viewing_specific_album) {
-            $.get(url, function( data ) {
-                currently_viewed_album = data
-                foto_backend_event.dispatchEvent(events.ALBUM_NAME_RECEIVED)
-            })
-        }
-    }
-
-    export function ClearCurrentViewedAlbum() {
-        currently_viewed_album = ''
-    }
-
-    function DeduceMimeTypeByFileExtension(filepath: string): string {
-        let file_extension = filepath.split(".").reverse()[0].toLowerCase()
-        switch (file_extension) {
-            case "jpg":
-            case "jpeg":
-                return 'image/jpeg'
-            case 'png':
-            case 'webp':
-                return `image/${file_extension}`
-            default:
-                return 'unknown'
-        }
-    }
-
-    export function UploadPhoto(file: File): Promise<string> {
-        return new Promise( async (resolve, reject) => {
-            let xhr = new XMLHttpRequest()
-            let pathname = '/to' + window.location.pathname
-            xhr.open('POST', pathname)
-            xhr.setRequestHeader('Content-Type', DeduceMimeTypeByFileExtension(file.name))
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState == xhr.DONE && xhr.status == 200) {
-                    resolve(xhr.responseText)
-                }
-            }
-            let data = await file.arrayBuffer()
-            xhr.send(data)
-        })
-    }
-
-    export async function UploadPhotos(
-        submission_buttons_disabled_setter: React.Dispatch<React.SetStateAction<boolean>>,
-        file_input_ref: React.MutableRefObject<HTMLInputElement | null>,
-        ListOfPhotosDispatch: React.Dispatch<ListOfPhotosAction>
-    ) {
-        submission_buttons_disabled_setter(true)
-        let files_to_be_uploaded = (document.getElementById('file-upload-input') as (HTMLInputElement | null))?.files
-        
-        if (files_to_be_uploaded) {
-            if (files_to_be_uploaded.length == 0)  {
-                alert('No files yet to be uploaded, please choose first!')
-                submission_buttons_disabled_setter(false)
-                return
-            }
-            else /* if there are files to be uploaded */ {
-                for (
-                    // initialization
-                    let i = 0, current_file = files_to_be_uploaded.item(i);
-
-                    // condition
-                    i < files_to_be_uploaded.length; 
-
-                    // update expression
-                    current_file = files_to_be_uploaded.item(++i)
-                ) {
-                    if (current_file) {
-                        await UploadPhoto(current_file)
-                        let url = URL.createObjectURL(current_file)
-                        ListOfPhotosDispatch({
-                            type: 'ADD PHOTO',
-                            photo: {
-                                key: (dummy_key_track++).toString(),
-                                url
-                            }
-                        })
-                    }
-                }
-                // this resets the file input
-                if (file_input_ref?.current) {
-                    file_input_ref.current.value = ''
-                }
-                submission_buttons_disabled_setter(false)
-            }
-        }
-
-    }
-    
     async function RegisterNewAlbum(album_name: string): Promise<string | undefined>{
         return new Promise( (resolve, reject) => {
             let request = $.ajax('/new/album', {
@@ -243,6 +124,93 @@ namespace FotoBackendAPI {
         return Promise.resolve()
     }
 
+    /**
+     * This function gets the album name from the server of the current album being viewed, 
+     * this doesn't return anything but it must be invoked first before calling GetAlbumName function
+     */
+    export function GetAlbumNameFromServer() {
+        let album_id = GetCurrentAlbumID() 
+
+        
+
+        // We do this since there is a tendency that the React.useEffect() to call this function many times
+        // since because in dev mode, Effect hooks called twice, and the Effects that we're using changes the
+        // state of the component
+        let already_requested_album_name_for_the_current_album = (album_id === last_request_album_id_for_album_name)
+        if (already_requested_album_name_for_the_current_album)
+            return // ignore function call
+
+
+        // There's no need to contact the server for the name of the 'All Photos' album
+        if (album_id === 'all-photos') {
+            current_album_name = 'All Photos'
+            foto_backend_event.dispatchEvent(events.ALBUM_NAME_RECEIVED)
+            return
+        }
+
+        last_request_album_id_for_album_name = album_id
+
+        let url = `/album/name/${album_id}`
+        $.get(url, function (data) {
+            current_album_name = data
+            foto_backend_event.dispatchEvent(events.ALBUM_NAME_RECEIVED)
+        })
+    }
+
+    /**
+     * This function returns the album name that was received from the server, before
+     * calling this function you must call first the GetAlbumNameFromServer(), and because the
+     * React.useEffect() doesn't permit asynchronous function, this must be called after the event
+     * `ALBUM_NAME_RECEIVED` has been dispatched 
+     */
+    export function GetAlbumName() {
+        return current_album_name
+    }
+
+    /**
+     * This function gets the album photos from the server of the current album being viewed, 
+     * this doesn't return anything but it must be invoked first before calling GetAlbumPhotos function
+     */
+    export function GetAlbumPhotosFromServer() {
+        let album_id = GetCurrentAlbumID()
+        let url = `/photos/${album_id}`
+
+        // We do this since there is a tendency that the React.useEffect() to call this function many times
+        // since because in dev mode, Effect hooks called twice, and the Effects that we're using changes the
+        // state of the component
+        let already_requested_photos_for_the_current_album = (album_id === last_request_album_id_for_album_photos)
+        if (already_requested_photos_for_the_current_album)
+            return // ignore function call
+
+        last_request_album_id_for_album_photos = album_id
+
+        $.get(url, function (data: string[]) {
+            current_album_photos = data
+            foto_backend_event.dispatchEvent(events.ALBUM_PHOTOS_LOADED)
+        })
+    }
+
+    /**
+     * This function returns the album photos that was received from the server, before
+     * calling this function you must call first the GetAlbumPhotosFromServer(), and because the
+     * React.useEffect() doesn't permit asynchronous function, this must be called after the event
+     * `ALBUM_PHOTOS_LOADED` has been dispatched 
+     */
+    export function GetAlbumPhotos() {
+        return current_album_photos
+    }
+
+    /**
+     * We call this function after we leave the album in order to prevent photos and the album name
+     * not loading or showing after the second time we visit the same album
+     */
+    export function ResetState() {
+        current_album_name = ''
+        current_album_photos = []
+        last_request_album_id_for_album_name = ''
+        last_request_album_id_for_album_photos = ''
+    }
+
 } // FotoBackendAPI
 
 
@@ -253,13 +221,7 @@ function Album(props) {
                 /* if there's an image preview available */ <img src={ (props?.imgSrc) ? props.imgSrc : "" } /> :
                 /* if there's no image */ <div className="album-blank-preview"></div>
         }
-        <ReactRouterDOM.Link 
-            to={props?.link}
-            onClick={ () => {
-                currently_viewed_album = props?.name
-            }
-            }
-        >{props?.name}</ReactRouterDOM.Link>
+        <ReactRouterDOM.Link to={props?.link}>{props?.name}</ReactRouterDOM.Link>
     </div>
 }
 
@@ -339,9 +301,9 @@ function AlbumsView() {
 
 
     return (
-        <div className='flex-column' style={{ height: '100vh' }}>
+        <div className='flex-column' id='albums-view'>
             { is_create_album_prompt_visible && <CreateAlbumPrompt/> }
-            <div id="album-view" className="flex-row">
+            <div id="albums-container" className="flex-row">
                 { 
                     list_of_albums.map( (albumEntry) => {
                         let albumid = albumEntry?.albumid ?? 'all-photos'
@@ -359,212 +321,76 @@ function AlbumsView() {
     )
 }
 
-let already_sent_album_name_request = false
+function AlbumView() {
+    let [album_name, SetAlbumName] = React.useState('')
+    let [photos, SetAlbumPhotos] = React.useState<string[]>([])
+    let [currently_viewed_photo, SetCurrentlyViewedPhoto] = React.useState('')
 
-function SpecificAlbumViewNavigationBar() {
-    let [albumName, setAlbumName] = React.useState(currently_viewed_album)
-
-    React.useEffect( () => {
-        
-        let albumid = window.location.pathname.split('/').reverse()[0]
-        if (albumid === 'all-photos')
-            return setAlbumName('All Photos')
-
-        function updateAlbumName() {
-            setAlbumName(currently_viewed_album)
-        }
-        FotoBackendAPI.EventHook.addEventListener('ALBUM_NAME_RECEIVED', updateAlbumName)
-        if (!already_sent_album_name_request) {
-            FotoBackendAPI.GetAlbumNameFromServer()
-            already_sent_album_name_request = true
-        }
-        return () => FotoBackendAPI.EventHook.removeEventListener('ALBUM_NAME_RECEIVED', updateAlbumName)
-    }, [albumName])
-
-
-    return <div style={{
-        padding: "0.2cm 0.5cm",
-        height: "10%",
-        maxHeight: "1cm"
-    }} className="flex-row">
-        <div style={
-            {
-                width: "10%"
-            }
-        }>
-            <ReactRouterDOM.Link 
-                to={"/home"} 
-                id="to-homepage-arrow" 
-                onClick={ () => FotoBackendAPI.ClearCurrentViewedAlbum() }>
-                <img src="/assets/svgs/arrow-sm-left-svgrepo-com.svg"/>
-            </ReactRouterDOM.Link>
-        </div>
-        <div style={{
-            width: "80%"
-        }} className="flex center">
-        <span style={{
-            fontFamily: 'Work Sans',
-            fontSize: '1.3em'
-        }}>{albumName}</span>
-        </div>
-        <div style={{
-            width: "10%"
-        }}></div>
-    </div>
-}
-
-// Component used to view a specific photo in fullscreen
-// this is handled by the SpecificAlbumView parent component
-function SpecificPhotoView(
-    { 
-        currently_viewed_photo_source, 
-        HideSpecificPhotoViewComponent 
-    }: { 
-        currently_viewed_photo_source: string,
-        HideSpecificPhotoViewComponent: () => void 
+    // State functions
+    // ---------------------------------------------------
+    function SynchronizeAlbumName() {
+        SetAlbumName(FotoBackendAPI.GetAlbumName())
     }
-) {
-    return <div id='specific-photo-view'>
-        <div>
-            <button onClick={HideSpecificPhotoViewComponent}>
-                <img src='/assets/svgs/arrow-sm-left-svgrepo-com-white.svg'/>
-            </button>
-        </div>
-        <div><img src={currently_viewed_photo_source}/></div>
-    </div>
-} 
-
-
-function PhotosView(
-
-// expected prop components
-{
-    list_of_photos,
-    ListOfPhotosDispatch,
-    SetCurrentlyViewedPhoto 
-}: 
-
-// type inference for prop components
-{
-    list_of_photos: PhotoEntry[],
-    ListOfPhotosDispatch: React.Dispatch<ListOfPhotosAction>,
-    SetCurrentlyViewedPhoto: React.Dispatch<React.SetStateAction<string>>
-})
-
-{
-    let [submissionButtonsDisabledValue, setSubmissionButtonsDisabledValue] = React.useState(false)
-    let file_input_ref: React.MutableRefObject<HTMLInputElement | null> = React.useRef(null)
-
-    return <div style={{
-        height: "90%",
-        width: "100%"
-    }} className="flex-column">
-        <div id="photos-view-container">
-            { list_of_photos.map( (photo) => {
-                return <img 
-                    src={photo.url} 
-                    key={photo.key} 
-                    className="photo" 
-                    onClick={
-                        function() {
-                            SetCurrentlyViewedPhoto(photo.url)
-                        }
-                    }
-                />
-            } ) } 
-        </div>
-        <div className="flex center" style={{
-            width: "100%",
-            height: "10%",
-            maxHeight: "1cm",
-        }}>
-            <input 
-                type="file" 
-                id="file-upload-input" 
-                accept="image/webp, image/png, image/jpeg" 
-                multiple
-                disabled={submissionButtonsDisabledValue}
-                ref={file_input_ref}
-             />
-            <button onClick={() => {
-                FotoBackendAPI.UploadPhotos(
-                    setSubmissionButtonsDisabledValue, 
-                    file_input_ref,
-                    ListOfPhotosDispatch,
-                )
-            }} disabled={submissionButtonsDisabledValue}>Submit</button>
-        </div>
-    </div>
-}
-
-
-function ListOfPhotosInit(list_of_photos: PhotoEntry[]): PhotoEntry[] {
-    return list_of_photos
-}
-
-type SpecificAlbumViewReducer = React.Reducer<PhotoEntry[], ListOfPhotosAction>
-
-function SpecificAlbumView() {
-
-    let [list_of_photos, ListOfPhotosDispatch] = React.useReducer<SpecificAlbumViewReducer, PhotoEntry[]>(
-        ListOfPhotosReducer, // reducer
-        [],                  // initialArg 
-        ListOfPhotosInit     // init
-    )
-    let [currently_viewed_photo, SetCurrentlyViewedPhoto] = React.useState<string>('')
-    
-    function HideSpecificPhotoViewComponent() {
+    function SynchronizeAlbumPhotos() {
+        SetAlbumPhotos(FotoBackendAPI.GetAlbumPhotos())
+    }
+    function HideCurrentlyViewedPhoto() {
         SetCurrentlyViewedPhoto('')
     }
+    // ---------------------------------------------------
 
-    React.useEffect( () => {
-        let albumid = FotoBackendAPI.GetAlbumID()
-        let url = `/photos/${albumid}`
-        $.ajax(url, {
-            method: 'GET',
-            dataType: 'json',
-            success: function (photo_urls: string[]) {
+    // Effect hooks
+    // ---------------------------------------------------
+    function SynchronizeAlbumPhotosWithFotoBackend() {
+        FotoBackendAPI.EventHook.addEventListener('ALBUM_PHOTOS_LOADED', SynchronizeAlbumPhotos)
+        FotoBackendAPI.GetAlbumPhotosFromServer()
+        return () => FotoBackendAPI.EventHook.removeEventListener('ALBUM_PHOTOS_LOADED', SynchronizeAlbumPhotos)
+    }
 
-                // we call RESET on dispatch since in the development mode, the component
-                // gets called twice even if the dependency doesn't change, because of this
-                // behavior, when we render our SpecificAlbumView, the picture gets doubled
-                // this call prevents it from happening, we cannot also rely on the cleanup
-                // function as recommended in React docs since we are dealing with asynchronicity
-                // therefore, the cleanup function won't prevent the pictures getting doubled
-                ListOfPhotosDispatch({ type: 'RESET' })
+    function SynchronizeAlbumNameWithFotoBackend() {
+        FotoBackendAPI.EventHook.addEventListener('ALBUM_NAME_RECEIVED', SynchronizeAlbumName)
+        FotoBackendAPI.GetAlbumNameFromServer()
+        return () => FotoBackendAPI.EventHook.removeEventListener('ALBUM_NAME_RECEIVED', SynchronizeAlbumName)
+    }
 
-                photo_urls.map( (photo_url) => 
-                    ListOfPhotosDispatch(
-                        {
-                            type: 'ADD PHOTO', 
-                            photo: { 
-                                key: (dummy_key_track++).toString(), 
-                                url: photo_url 
-                            }
-                        }
-                    ) // end of ListOfPhotosDispatch
-                ) // end of map function
-            } // end of success function
-        })
-    }, [currently_viewed_album])
+    React.useEffect(() => {
+        SynchronizeAlbumNameWithFotoBackend()
+        SynchronizeAlbumPhotosWithFotoBackend()
+    })
+    // ---------------------------------------------------
 
-
-    return <div className="flex-column" style={{
-        height: "100vh"
-    }}>
-        <SpecificAlbumViewNavigationBar/>
-        <PhotosView 
-            list_of_photos={list_of_photos}
-            ListOfPhotosDispatch={ListOfPhotosDispatch}
-            SetCurrentlyViewedPhoto={SetCurrentlyViewedPhoto}
-        />
-        {
-            (currently_viewed_photo != '') && <SpecificPhotoView 
-                                                    currently_viewed_photo_source={currently_viewed_photo}
-                                                    HideSpecificPhotoViewComponent={HideSpecificPhotoViewComponent}
-                                              />
-        }
-    </div>
+    return (
+        <div className='flex-column' id='album-view'>
+            { 
+                (currently_viewed_photo != '') && 
+                <div id='album-view-current-viewed-photo-container'>
+                    <div>
+                        <button onClick={HideCurrentlyViewedPhoto}>
+                            <img src='/assets/svgs/arrow-sm-left-svgrepo-com-white.svg'/>
+                        </button>
+                    </div>
+                    <img src={currently_viewed_photo}/>
+                </div>
+            }
+            <div className='flex-row' id='album-view-navigation-bar'>
+                <div>
+                    <ReactRouterDOM.Link to='/home' onClick={FotoBackendAPI.ResetState}>
+                        <img src='/assets/svgs/arrow-sm-left-svgrepo-com.svg'/>
+                    </ReactRouterDOM.Link>
+                </div> 
+                <div className='flex center'>{album_name}</div>
+                <div></div>
+            </div> 
+            <div className='flex-row' id='album-view-photos-container'>{
+                photos.map( (photo_url) => {
+                    return <img src={photo_url} key={photo_url} onClick={() => SetCurrentlyViewedPhoto(photo_url)}/>
+                })
+            }</div>
+            <div className='flex center' id='album-view-submit-container'>
+                <input type='file'/>
+            </div>
+        </div>
+    )
 }
 
 const router = ReactRouterDOM.createBrowserRouter([
@@ -574,7 +400,7 @@ const router = ReactRouterDOM.createBrowserRouter([
     },
     {
         path: "/album/:id",
-        element: <SpecificAlbumView/>
+        element: <AlbumView/>
     }
 ])
 
