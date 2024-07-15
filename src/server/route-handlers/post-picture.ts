@@ -12,8 +12,7 @@ import { ImageUploadingHandlingReportStatus } from '../enums'
 export default async function PostPictureRouteHandler ( request: ExtendedFastifyRequest, reply: FastifyReply ){
     let body = (request.body as ImageUploadingHandlingReport)
     if (body?.status == ImageUploadingHandlingReportStatus.MissingAuthorization) {
-        reply.code(Globals.HttpStatusCode.Unauthorized)
-        return
+        return reply.code(Globals.HttpStatusCode.Unauthorized).send()
     }
     if (
         body.status == ImageUploadingHandlingReportStatus.Successful &&
@@ -23,7 +22,6 @@ export default async function PostPictureRouteHandler ( request: ExtendedFastify
         let username = await DatabaseQueries.GetUsernameBySessionID(request.cookies.sessionid)
         let albumid = (request.params as any)?.id ?? ''
         await DatabaseQueries.RecordNewPicture(username, albumid, body.photo_id, body.photo_format)
-        reply.code(Globals.HttpStatusCode.Ok)
-        return
+        return reply.code(Globals.HttpStatusCode.Ok).send()
     }
 }

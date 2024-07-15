@@ -14,10 +14,10 @@ export default async function ReactPageScriptHandler ( request: FastifyRequest, 
     if (react_page_script_exists) {
         let react_page_script = await Globals.DynamicReactPageManagerInstance.GetPage(true_path_to_react_page_script)
         if (react_page_script) {
-            reply.code(Globals.HttpStatusCode.Ok).type("text/javascript").send(react_page_script)
+            return reply.code(Globals.HttpStatusCode.Ok).type("text/javascript").send(react_page_script)
         }
         else /* if compilation error occurs */ {
-            reply.code(Globals.HttpStatusCode.InternalServerError)
+            return reply.code(Globals.HttpStatusCode.InternalServerError).send()
         }
     }
 }

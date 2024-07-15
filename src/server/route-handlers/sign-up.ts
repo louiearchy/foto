@@ -31,6 +31,6 @@ export default async function SignUpRouteHandler( request: FastifyRequest, reply
     let session_id = UtilsID.GenerateSessionID()
     DatabaseQueries.SaveSession(username, session_id)
 
-    reply.header('set-cookie', `sessionid=${session_id}`).code(Globals.HttpStatusCode.Ok)
+    return reply.header('set-cookie', `sessionid=${session_id}`).code(Globals.HttpStatusCode.Ok).send()
     
 }

@@ -16,7 +16,7 @@ interface PhotoEntry {
 export default async function PhotosRouteHandler( request: ExtendedFastifyRequest, response: FastifyReply ) {
     
     if (await request.IsNotOnSession())
-        return response.code(Globals.HttpStatusCode.Unauthorized)
+        return response.code(Globals.HttpStatusCode.Unauthorized).send()
 
     let username = await DatabaseQueries.GetUsernameBySessionID(request.cookies.sessionid)
     let albumid = (request.params as any)?.albumid ?? ''

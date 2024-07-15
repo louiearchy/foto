@@ -9,16 +9,13 @@ export default async function AlbumNameRouteHandler(request: ExtendedFastifyRequ
 
     let { albumid } = (request.params as any)
 
-    if (!albumid) {
-        reply.code(Globals.HttpStatusCode.BadRequest)
-        return
-    }
+    if (!albumid) 
+        return reply.code(Globals.HttpStatusCode.BadRequest).send()
 
     if (await request.IsNotOnSession())
-        return reply.code(Globals.HttpStatusCode.Unauthorized)
+        return reply.code(Globals.HttpStatusCode.Unauthorized).send()
 
     let album_name = await DatabaseQueries.GetAlbumNameByItsAlbumID(albumid)
-    reply.code(Globals.HttpStatusCode.Ok).type("text/plain").send(album_name)
-    return
+    return reply.code(Globals.HttpStatusCode.Ok).type("text/plain").send(album_name)
 
 }

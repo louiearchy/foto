@@ -15,10 +15,10 @@ export default async function AssetsRouteHandler ( request: ExtendedFastifyReque
             reply.type(asset_file_mime_type)
         }
         let asset_file = await fsPromise.readFile(true_path_to_the_asset_file)
-        reply.send(asset_file)
+        return reply.send(asset_file)
     }
     else {
-        reply.code(Globals.HttpStatusCode.NotFound)
+        return reply.code(Globals.HttpStatusCode.NotFound).send()
     }
 }
 

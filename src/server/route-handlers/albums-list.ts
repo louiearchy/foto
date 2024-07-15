@@ -12,10 +12,10 @@ import Globals from '../globals'
 export default async function GetAlbumsListRouteHandler ( request: ExtendedFastifyRequest, reply: FastifyReply ) {
     
     if (await request.IsNotOnSession())
-        return reply.code(Globals.HttpStatusCode.Unauthorized)
+        return reply.code(Globals.HttpStatusCode.Unauthorized).send()
 
     let username = await DatabaseQueries.GetUsernameBySessionID(request.cookies.sessionid)
     let albums = await DatabaseQueries.GetAlbums(username)
-    return reply.code(Globals.HttpStatusCode.Ok).send(albums).type("application/json")
+    return reply.code(Globals.HttpStatusCode.Ok).type("application/json").send(albums)
 
 }
