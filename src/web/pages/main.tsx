@@ -464,7 +464,7 @@ function AlbumView() {
                 })
             }</div>
             <div className='flex center' id='album-view-submit-container'>
-                <input type='file' ref={files_input_ref}/>
+                <input type='file' ref={files_input_ref} multiple={true}/>
                 <button onClick={SubmitPhotos}>Submit</button>
             </div>
         </div>
