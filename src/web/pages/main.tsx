@@ -211,6 +211,37 @@ namespace FotoBackendAPI {
         last_request_album_id_for_album_photos = ''
     }
 
+    function DeduceMimeTypeByFileExtension(filename: string) {
+        let file_extension = filename.split('.').reverse()[0].toLowerCase()
+        switch (file_extension) {
+            case 'jpg':
+            case 'jpeg':
+                return 'image/jpeg'
+            case 'png':
+            case 'webp':
+                return `image/${file_extension}`
+            default:
+                return ''
+        }
+    }
+
+    async function UploadPhoto(file: File) {
+        let xhr = new XMLHttpRequest()
+        let url = `/to/album/${GetCurrentAlbumID()}`
+        xhr.open('POST', url)
+        xhr.setRequestHeader('Content-Type', DeduceMimeTypeByFileExtension(file.name))
+        let image_data = await file.arrayBuffer()
+        xhr.send(image_data)
+    }
+
+    export function UploadPhotos(files: FileList) {
+        if (files.length > 0) {
+            for (const file of files) {
+                UploadPhoto(file)
+            }
+        }
+    }
+
 } // FotoBackendAPI
 
 
@@ -326,6 +357,8 @@ function AlbumView() {
     let [photos, SetAlbumPhotos] = React.useState<string[]>([])
     let [currently_viewed_photo, SetCurrentlyViewedPhoto] = React.useState('')
 
+    let files_input_ref = React.useRef<HTMLInputElement | null>(null)
+
     // State functions
     // ---------------------------------------------------
     function SynchronizeAlbumName() {
@@ -336,6 +369,12 @@ function AlbumView() {
     }
     function HideCurrentlyViewedPhoto() {
         SetCurrentlyViewedPhoto('')
+    }
+    function AddPhotoToAlbum(photo: File) {
+        let photo_url = URL.createObjectURL(photo)
+        let new_photos = photos
+        new_photos.push(photo_url)
+        SetAlbumPhotos([...new_photos])
     }
     // ---------------------------------------------------
 
@@ -358,6 +397,19 @@ function AlbumView() {
         SynchronizeAlbumPhotosWithFotoBackend()
     })
     // ---------------------------------------------------
+
+    function SubmitPhotos() {
+        if (files_input_ref && files_input_ref?.current) {
+            let photos_to_be_uploaded = files_input_ref.current.files
+            if (photos_to_be_uploaded && photos_to_be_uploaded.length > 0) {
+                FotoBackendAPI.UploadPhotos(photos_to_be_uploaded)
+                for (const photo of photos_to_be_uploaded) {
+                    AddPhotoToAlbum(photo)
+                }
+                files_input_ref.current.value = ''
+            }
+        }
+    }
 
     return (
         <div className='flex-column' id='album-view'>
@@ -387,7 +439,8 @@ function AlbumView() {
                 })
             }</div>
             <div className='flex center' id='album-view-submit-container'>
-                <input type='file'/>
+                <input type='file' ref={files_input_ref}/>
+                <button onClick={SubmitPhotos}>Submit</button>
             </div>
         </div>
     )
