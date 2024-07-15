@@ -254,6 +254,15 @@ body {
     width: 1cm;
 }
 
+#album-view-current-viewed-photo-container > div:first-child > div {
+    height: 100%;
+    width: calc(100% - 2cm);
+}
+
+#album-view-current-viewed-photo-container > div:first-child > button:last-child {
+    border: none;
+}
+
 /* The back button for the container of the currently viewed photo */
 #album-view-current-viewed-photo-container > div:first-child > button {
     background: transparent;

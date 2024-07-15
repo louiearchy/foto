@@ -242,6 +242,13 @@ namespace FotoBackendAPI {
         }
     }
 
+    export function DeletePhoto(image_id: string) {
+        let url = `/photo/${image_id}`
+        $.ajax(url, {
+            method: 'DELETE'
+        })
+    }
+
 } // FotoBackendAPI
 
 
@@ -376,6 +383,13 @@ function AlbumView() {
         new_photos.push(photo_url)
         SetAlbumPhotos([...new_photos])
     }
+    function RemovePhotoFromAlbumPhotos(given_photo_url: string) {
+        let new_photos = photos.filter((photo_url) => photo_url != given_photo_url)
+        // might dereference the array for garbage collection, since we create a new
+        // array with the filter function
+        photos = []
+        SetAlbumPhotos([...new_photos])
+    }
     // ---------------------------------------------------
 
     // Effect hooks
@@ -411,14 +425,25 @@ function AlbumView() {
         }
     }
 
+    function DeletePhoto() {
+        let photo_id = currently_viewed_photo.split('/')[2].split('.')[0]
+        FotoBackendAPI.DeletePhoto(photo_id)
+        HideCurrentlyViewedPhoto()
+        RemovePhotoFromAlbumPhotos(currently_viewed_photo)
+    }
+
     return (
         <div className='flex-column' id='album-view'>
             { 
                 (currently_viewed_photo != '') && 
                 <div id='album-view-current-viewed-photo-container'>
-                    <div>
+                    <div className='flex-row'>
                         <button onClick={HideCurrentlyViewedPhoto}>
                             <img src='/assets/svgs/arrow-sm-left-svgrepo-com-white.svg'/>
+                        </button>
+                        <div></div>
+                        <button onClick={DeletePhoto}>
+                            <img src='/assets/svgs/trash-bin-minimalistic-svgrepo-com.svg'/>
                         </button>
                     </div>
                     <img src={currently_viewed_photo}/>

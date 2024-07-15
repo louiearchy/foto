@@ -117,6 +117,21 @@ async function CheckPhotoResourceOwnership(username: string, photoid: string): P
     return Promise.resolve(query.rows[0]?.exists ?? false)
 }
 
+async function DeletePhoto(username: string, photoid: string): Promise<void> {
+    await Globals.FotoDbClient.query(
+        `DELETE FROM photos WHERE username='${username}' AND photoid='${photoid}'`
+    )
+    return Promise.resolve()
+}
+
+async function GetPhotoStorageLocation(username: string, photoid: string): Promise<string> {
+    let query = await Globals.FotoDbClient.query(
+        `SELECT photoid, format FROM photos WHERE username='${username}' AND photoid='${photoid}'`
+    )
+    let photo_storage_location = `built/${query.rows[0].photoid}.${query.rows[0].format}`
+    return Promise.resolve(photo_storage_location)
+}
+
 
 export default {
     QueryAccountInfo,
@@ -132,5 +147,7 @@ export default {
     IsSessionIdValid,
     GetPhotosOfAlbum,
     CheckPhotoResourceOwnership,
-    GetAllPhotos
+    GetAllPhotos,
+    DeletePhoto,
+    GetPhotoStorageLocation
 }
