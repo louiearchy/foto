@@ -213,8 +213,10 @@ body {
 }
 
 #album-view-photos-container > img {
-    height: 4cm;
-    width: 4cm;
+    --image-dimension: calc(calc(100vw - 2cm) / 8);
+    height: var(--image-dimension);
+    width: var(--image-dimension);
+    scrollbar-width: 1cm;
     object-fit: cover;
 }
 
