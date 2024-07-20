@@ -273,3 +273,79 @@ body {
 #album-view-current-viewed-photo-container > div:first-child > button:focus {
     outline: none;
 }
+
+
+/* mobile phone viewport */
+@media all and (max-width: 500px) {
+    :root {
+        --album-column-gap: 0.4cm;
+        --album-row-gap: 0.7cm;
+        --album-dimension: calc(calc(100vw - calc(0.8cm + var(--album-column-gap))) / 2);
+    }
+    #albums-container {
+        display: grid;
+        grid-template-columns: var(--album-dimension) var(--album-dimension);
+        grid-template-rows: var(--album-dimension);
+        column-gap: var(--album-column-gap);
+        row-gap: var(--album-row-gap);
+        padding: 0.5cm 0.4cm;
+    }
+    .album > .album-blank-preview {
+        border-radius: 0.1rem;
+    }
+    #albums-container > .album {
+        width: var(--album-dimension);
+        height: var(--album-dimension);
+        padding: 0;
+    }
+    #albums-container > .album > a {
+        font-size: 1em;
+    }
+    #album-view-photos-container > img {
+        --image-dimension: calc(calc(100vw - 1cm) / 4);
+        width: var(--image-dimension);
+        height: var(--image-dimension); 
+    }
+    #album-view-photos-container {
+        row-gap: 0;
+    }
+    #album-view-submit-container {
+        height: 1cm;
+        padding: 0.3cm 0;
+    }
+    #album-view-current-viewed-photo-container > img {
+        height: 100%;
+        width: 100%;
+    }
+}
+
+/* tablet viewport */
+@media all and (min-width: 501px) and (max-width: 768px) {
+    :root {
+        --album-column-gap: 0.35cm;
+        --album-column-number: 3;
+        --total-album-column-gap: calc(var(--album-column-gap) * calc(var(--album-column-number) - 1));
+        --albums-view-container-padding: 1cm; /* pertains to the left and right padding combined */
+        --album-container-width: calc(100vw - calc(var(--total-album-column-gap) + var(--albums-view-container-padding)));
+        --album-dimension: calc(var(--album-container-width) / var(--album-column-number));
+    }
+    #albums-container {
+        display: grid;
+        grid-template-columns: var(--album-dimension) var(--album-dimension) var(--album-dimension);
+        grid-template-rows: var(--album-dimension);
+        column-gap: var(--album-column-gap);
+    }
+    #albums-container > .album {
+        height: var(--album-dimension);
+        width: var(--album-dimension);
+        padding: 0;
+    }
+    .album > a {
+        font-size: 1em;
+    }
+    #album-view-photos-container > img {
+        --image-dimension: calc(calc(100vw - 1cm) / 6);
+        width: var(--image-dimension);
+        height: var(--image-dimension);
+    }
+}
