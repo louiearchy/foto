@@ -15,6 +15,7 @@ SERVER_DATABASE_PORT = 5432
 DATABASE_SERVER_PROCESS = None
 POSTGRES_DATABASE_CONNECTION = None
 FOTO_DATABASE_CONNECTION = None
+IMAGE_PROCESSING_SERVICE = None
 
 
 class TimeoutManager:
@@ -261,6 +262,22 @@ def SetupDatabaseNTables():
 
     return True
 
+def ShutdownImageProcessingService():
+    global IMAGE_PROCESSING_SERVICE
+    if IMAGE_PROCESSING_SERVICE != None:
+        IMAGE_PROCESSING_SERVICE.terminate()
+
+def RunImageProcessingService():
+    global IMAGE_PROCESSING_SERVICE
+    try: 
+        IMAGE_PROCESSING_SERVICE = subprocess.Popen(
+            "go run src/image-processing-service/main.go", shell=True
+        )
+        return True
+    except OSError:
+        print("failed to run the database server!")
+        return False
+
 
 
 def SetupDatabase():
@@ -283,15 +300,22 @@ def SetupDatabase():
 if __name__ == "__main__":
 
     try:
+
+        ExitOnFail(CheckIfOnPath("ffmpeg"), "ffmpeg is needed!")
+        ExitOnFail(CheckIfOnPath("go"), "go is needed!")
+
         building_server_process = BuildServer()
         is_building_server_successful = building_server_process.returncode == 0
         ExitOnFail( is_building_server_successful, "failed to build the server!" )
 
         ExitOnFail( SetupDatabase() )
+        ExitOnFail( RunImageProcessingService() )
+
         RunServer()
 
     except KeyboardInterrupt:
         FreeDatabaseRelatedResources()
+        ShutdownImageProcessingService()
         print("") # we use this as most terminals prints ' ^C ' which obscures our print
         print("Exiting...")
         exit(0)

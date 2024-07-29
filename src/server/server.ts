@@ -3,6 +3,7 @@ import { Buffer } from 'node:buffer'
 import Fastify from 'fastify'
 import fs from 'node:fs'
 import fsPromise from 'node:fs/promises'
+import net from 'node:net'
 
 import DatabaseQueries from './database-queries'
 import Globals from './globals'
@@ -98,6 +99,21 @@ function LinkPathToFile(request_path: string, filepath: string, server) {
     })
 }
 
+function DownResolutePhoto(path_to_photo: string): Promise<string> {
+    return new Promise( (resolve, reject) => {
+        let path_to_output_photo = path_to_photo.replace("built/", "built/thumbnail-")
+        const client = net.createConnection({ port: 3001, host: 'localhost' }, () => {
+            client.write(`DOWN-RESOLUTE ${path_to_photo} ${path_to_output_photo}`)
+        })
+        client.on('data', function(data) {
+            let message = data.toString('utf-8')
+            client.end()
+            resolve(message)
+        })
+        client.on('end', () => resolve(''))
+    })
+}
+
 // For file upload, closely related to /to/album/:id? POST request handler
 SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function (request: ExtendedFastifyRequest, payload, done) {
     if (/\/to\/album\//.test(request.url)) {
@@ -119,11 +135,12 @@ SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
             file_write_stream.write(chunk)
         })
 
-        payload.on('end', function () {
+        payload.on('end', async function () {
             file_write_stream.close()
             body.status = ImageUploadingHandlingReportStatus.Successful 
             body.photo_id = unique_photo_id
             body.photo_format = photo_format
+            await DownResolutePhoto(filepath)
             done(null, body)
             return
         })
