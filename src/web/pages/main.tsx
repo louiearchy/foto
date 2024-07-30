@@ -46,7 +46,7 @@ namespace FotoBackendAPI {
 
     var current_album_name: string = ''
     var current_album_photo_entries: PhotoEntry[] = []
-    var current_album_photos: string[] = []
+    var current_album_thumbnail_photos: string[] = []
     var last_request_album_id_for_album_name = ''
     var last_request_album_id_for_album_photos = ''
 
@@ -192,7 +192,7 @@ namespace FotoBackendAPI {
 
         $.get(url, function (data: PhotoEntry[]) {
             current_album_photo_entries = data
-            current_album_photos = current_album_photo_entries.map(( photo_entry ) => {
+            current_album_thumbnail_photos = current_album_photo_entries.map(( photo_entry ) => {
                 return `/thumbnail/${photo_entry.photoid}`
             })
             foto_backend_event.dispatchEvent(events.ALBUM_PHOTOS_LOADED)
@@ -205,8 +205,8 @@ namespace FotoBackendAPI {
      * React.useEffect() doesn't permit asynchronous function, this must be called after the event
      * `ALBUM_PHOTOS_LOADED` has been dispatched 
      */
-    export function GetAlbumPhotos() {
-        return current_album_photos
+    export function GetAlbumThumbnailPhotos() {
+        return current_album_thumbnail_photos
     }
 
     /**
@@ -215,7 +215,7 @@ namespace FotoBackendAPI {
      */
     export function ResetState() {
         current_album_name = ''
-        current_album_photos = []
+        current_album_thumbnail_photos = []
         last_request_album_id_for_album_name = ''
         last_request_album_id_for_album_photos = ''
     }
@@ -261,6 +261,17 @@ namespace FotoBackendAPI {
         $.ajax(url, {
             method: 'DELETE'
         })
+    }
+
+    export function GetPhotoUrlByThumbnailUrl(thumbnail_photo_url: string): string {
+        let photoid_of_thumbnail = thumbnail_photo_url.split('/').reverse()[0]
+        for (const {photoid, format} of current_album_photo_entries ) {
+            if (photoid_of_thumbnail == photoid) {
+                let photo_url = `/photo/${photoid}.${format}`
+                return photo_url
+            }
+        }
+        return ""
     }
 
 } // FotoBackendAPI
@@ -375,7 +386,7 @@ function AlbumsView() {
 
 function AlbumView() {
     let [album_name, SetAlbumName] = React.useState('')
-    let [photos, SetAlbumPhotos] = React.useState<string[]>([])
+    let [thumbnail_photos, SetAlbumThumbnailPhotos] = React.useState<string[]>([])
     let [currently_viewed_photo, SetCurrentlyViewedPhoto] = React.useState('')
 
     let files_input_ref = React.useRef<HTMLInputElement | null>(null)
@@ -385,32 +396,32 @@ function AlbumView() {
     function SynchronizeAlbumName() {
         SetAlbumName(FotoBackendAPI.GetAlbumName())
     }
-    function SynchronizeAlbumPhotos() {
-        SetAlbumPhotos(FotoBackendAPI.GetAlbumPhotos())
+    function SynchronizeAlbumThumbnailPhotos() {
+        SetAlbumThumbnailPhotos(FotoBackendAPI.GetAlbumThumbnailPhotos())
     }
     function HideCurrentlyViewedPhoto() {
         SetCurrentlyViewedPhoto('')
     }
-    function AddPhotoToAlbum(photo_url: string) {
-        let new_photos = photos
-        new_photos.push(photo_url)
-        SetAlbumPhotos([...new_photos])
+    function AddPhotoToAlbum(thumbnail_photo_url: string) {
+        let new_thumbnail_photos = thumbnail_photos
+        new_thumbnail_photos.push(thumbnail_photo_url)
+        SetAlbumThumbnailPhotos([...new_thumbnail_photos])
     }
     function RemovePhotoFromAlbumPhotos(given_photo_url: string) {
-        let new_photos = photos.filter((photo_url) => photo_url != given_photo_url)
+        let new_photos = thumbnail_photos.filter((photo_url) => photo_url != given_photo_url)
         // might dereference the array for garbage collection, since we create a new
         // array with the filter function
-        photos = []
-        SetAlbumPhotos([...new_photos])
+        thumbnail_photos = []
+        SetAlbumThumbnailPhotos([...new_photos])
     }
     // ---------------------------------------------------
 
     // Effect hooks
     // ---------------------------------------------------
     function SynchronizeAlbumPhotosWithFotoBackend() {
-        FotoBackendAPI.EventHook.addEventListener('ALBUM_PHOTOS_LOADED', SynchronizeAlbumPhotos)
+        FotoBackendAPI.EventHook.addEventListener('ALBUM_PHOTOS_LOADED', SynchronizeAlbumThumbnailPhotos)
         FotoBackendAPI.GetAlbumPhotosFromServer()
-        return () => FotoBackendAPI.EventHook.removeEventListener('ALBUM_PHOTOS_LOADED', SynchronizeAlbumPhotos)
+        return () => FotoBackendAPI.EventHook.removeEventListener('ALBUM_PHOTOS_LOADED', SynchronizeAlbumThumbnailPhotos)
     }
 
     function SynchronizeAlbumNameWithFotoBackend() {
@@ -476,8 +487,12 @@ function AlbumView() {
                 <div></div>
             </div> 
             <div className='flex-row' id='album-view-photos-container'>{
-                photos.map( (photo_url) => {
-                    return <img src={photo_url} key={photo_url} onClick={() => SetCurrentlyViewedPhoto(photo_url)}/>
+                thumbnail_photos.map( (thumbnail_photo_url) => {
+                    let photo_url = FotoBackendAPI.GetPhotoUrlByThumbnailUrl(thumbnail_photo_url)
+                    return <img src={thumbnail_photo_url} 
+                                key={thumbnail_photo_url} 
+                                onClick={() => SetCurrentlyViewedPhoto(photo_url)}
+                            />
                 })
             }</div>
             <div className='flex center' id='album-view-submit-container'>
