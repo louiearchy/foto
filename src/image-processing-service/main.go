@@ -29,7 +29,15 @@ func CalculateIdealDownResolutedPhotoDimnensions(photo_config *image.Config, max
 	return uint(ideal_image_width), uint(math.Round(ideal_image_height))
 }
 
+func PhotoNeedsDownResolution(photo_config *image.Config) bool {
+	// for some reason, the image width and height gets swapped
+	// in image.Config, so we swap it again
+	image_width := photo_config.Height
+	return image_width > 500
+}
+
 func DownResolutePhoto(path_to_photo string, path_to_output string, maximum_resolution uint) {
+
 	photo_file, os_open_err := os.Open(path_to_photo)
 	if os_open_err != nil {
 		return
@@ -38,6 +46,11 @@ func DownResolutePhoto(path_to_photo string, path_to_output string, maximum_reso
 	config, _, decode_config_err := image.DecodeConfig(photo_file)
 
 	if decode_config_err != nil {
+		photo_file.Close()
+		return
+	}
+
+	if !PhotoNeedsDownResolution(&config) {
 		photo_file.Close()
 		return
 	}
