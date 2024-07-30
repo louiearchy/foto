@@ -433,7 +433,7 @@ function AlbumView() {
                     photos_to_be_uploaded,
                     // on post upload complete callback function
                     (photo_id: string) => {
-                        let thumbnail_url = `thumbnail/${photo_id}`
+                        let thumbnail_url = `/thumbnail/${photo_id}`
                         AddPhotoToAlbum(thumbnail_url)
                     }
                 )
