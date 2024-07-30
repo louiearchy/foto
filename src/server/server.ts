@@ -27,6 +27,7 @@ import PostPictureRouteHandler from './route-handlers/post-picture'
 import ReactPageScriptHandler from './route-handlers/react-page-scripts'
 import SignUpRouteHandler from './route-handlers/sign-up'
 import SpecificAlbumPageRouteHandler from './route-handlers/specific-album-page'
+import ThumbnailRouteHandler from './route-handlers/thumbnail'
 
 
 const SERVER_HOST = 'localhost'
@@ -99,9 +100,25 @@ function LinkPathToFile(request_path: string, filepath: string, server) {
     })
 }
 
+function ReplaceFileExtension(filepath: string, to_file_extension: string): string {
+    let splitted_filepath_by_dot = filepath.split(".")
+    let returning_replaced_file_extension_filepath = ""
+    for (let i = 0; i < splitted_filepath_by_dot.length; i++) {
+        let is_at_the_end = (i == (splitted_filepath_by_dot.length - 1))
+        if (is_at_the_end) {
+            returning_replaced_file_extension_filepath += to_file_extension
+        } else {
+            returning_replaced_file_extension_filepath += splitted_filepath_by_dot[i]
+        }
+    }
+    return returning_replaced_file_extension_filepath
+}
+
 function DownResolutePhoto(path_to_photo: string): Promise<string> {
     return new Promise( (resolve, reject) => {
         let path_to_output_photo = path_to_photo.replace("built/", "built/images/thumbnails/")
+        path_to_output_photo = ReplaceFileExtension(path_to_output_photo, ".webp")
+
         const client = net.createConnection({ port: 3001, host: 'localhost' }, () => {
             client.write(`DOWN-RESOLUTE ${path_to_photo} ${path_to_output_photo}`)
         })
@@ -159,6 +176,7 @@ SERVER.get("/album/:albumid", SpecificAlbumPageRouteHandler)
 SERVER.get("/album/name/:albumid", AlbumNameRouteHandler)
 SERVER.get("/photos/:albumid", PhotosRouteHandler)
 SERVER.get("/photo/:photo_resource", PhotoRouteHandler)
+SERVER.get("/thumbnail/:photo_id", ThumbnailRouteHandler)
 
 SERVER.post("/log-in", LogInRouteHandler)
 SERVER.post("/sign-up", SignUpRouteHandler)

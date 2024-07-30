@@ -13,6 +13,11 @@ interface AlbumEntry {
     albumid?: string
 }
 
+interface PhotoEntry {
+    photoid: string,
+    format: string
+}
+
 type AlbumEntries = AlbumEntry[]
 
 namespace FotoBackendAPI {
@@ -40,6 +45,7 @@ namespace FotoBackendAPI {
     var albums: AlbumEntries = DeepCopyInitialAlbums()
 
     var current_album_name: string = ''
+    var current_album_photo_entries: PhotoEntry[] = []
     var current_album_photos: string[] = []
     var last_request_album_id_for_album_name = ''
     var last_request_album_id_for_album_photos = ''
@@ -152,7 +158,7 @@ namespace FotoBackendAPI {
 
         let url = `/album/name/${album_id}`
         $.get(url, function (data) {
-            current_album_name = data
+            current_album_name = data 
             foto_backend_event.dispatchEvent(events.ALBUM_NAME_RECEIVED)
         })
     }
@@ -184,8 +190,11 @@ namespace FotoBackendAPI {
 
         last_request_album_id_for_album_photos = album_id
 
-        $.get(url, function (data: string[]) {
-            current_album_photos = data
+        $.get(url, function (data: PhotoEntry[]) {
+            current_album_photo_entries = data
+            current_album_photos = current_album_photo_entries.map(( photo_entry ) => {
+                return `/thumbnail/${photo_entry.photoid}`
+            })
             foto_backend_event.dispatchEvent(events.ALBUM_PHOTOS_LOADED)
         })
     }
@@ -225,19 +234,24 @@ namespace FotoBackendAPI {
         }
     }
 
-    async function UploadPhoto(file: File) {
+    async function UploadPhoto(file: File, onCompleteCallbackFn: (photo_id: string) => void) {
         let xhr = new XMLHttpRequest()
         let url = `/to/album/${GetCurrentAlbumID()}`
         xhr.open('POST', url)
         xhr.setRequestHeader('Content-Type', DeduceMimeTypeByFileExtension(file.name))
         let image_data = await file.arrayBuffer()
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == xhr.DONE && xhr.status == 200 /* Ok */ ) {
+                onCompleteCallbackFn(xhr.responseText)
+            }
+        }
         xhr.send(image_data)
     }
 
-    export function UploadPhotos(files: FileList) {
+    export function UploadPhotos(files: FileList, onCompleteCallbackFn: (photo_id: string) => void) {
         if (files.length > 0) {
             for (const file of files) {
-                UploadPhoto(file)
+                UploadPhoto(file, onCompleteCallbackFn)
             }
         }
     }
@@ -377,8 +391,7 @@ function AlbumView() {
     function HideCurrentlyViewedPhoto() {
         SetCurrentlyViewedPhoto('')
     }
-    function AddPhotoToAlbum(photo: File) {
-        let photo_url = URL.createObjectURL(photo)
+    function AddPhotoToAlbum(photo_url: string) {
         let new_photos = photos
         new_photos.push(photo_url)
         SetAlbumPhotos([...new_photos])
@@ -416,10 +429,14 @@ function AlbumView() {
         if (files_input_ref && files_input_ref?.current) {
             let photos_to_be_uploaded = files_input_ref.current.files
             if (photos_to_be_uploaded && photos_to_be_uploaded.length > 0) {
-                FotoBackendAPI.UploadPhotos(photos_to_be_uploaded)
-                for (const photo of photos_to_be_uploaded) {
-                    AddPhotoToAlbum(photo)
-                }
+                FotoBackendAPI.UploadPhotos(
+                    photos_to_be_uploaded,
+                    // on post upload complete callback function
+                    (photo_id: string) => {
+                        let thumbnail_url = `thumbnail/${photo_id}`
+                        AddPhotoToAlbum(thumbnail_url)
+                    }
+                )
                 files_input_ref.current.value = ''
             }
         }

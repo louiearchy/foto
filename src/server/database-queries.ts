@@ -65,6 +65,11 @@ async function IsAlbumIdValid(albumid: string): Promise<boolean> {
     return query.rows[0]?.exists ?? false
 }
 
+async function GetTruePathOfPicture(photoid: string): Promise<string> {
+    let query = await Globals.FotoDbClient.query(`SELECT format FROM photos WHERE photoid='${photoid}'`)
+    let format = query.rows[0].format
+    return `built/${photoid}.${format}`
+}
 
 async function RecordNewPicture( username: string, album_id: string | undefined, photoid: string, format: string ): Promise<void> {
     album_id ??= 'NULL'
@@ -149,5 +154,6 @@ export default {
     CheckPhotoResourceOwnership,
     GetAllPhotos,
     DeletePhoto,
-    GetPhotoStorageLocation
+    GetPhotoStorageLocation,
+    GetTruePathOfPicture
 }

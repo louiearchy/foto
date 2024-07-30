@@ -27,13 +27,6 @@ export default async function PhotosRouteHandler( request: ExtendedFastifyReques
     else // if the albumid for a specific album
         photo_entries = (await DatabaseQueries.GetPhotosOfAlbum(username, albumid) as PhotoEntry[])
 
-    let photos: string[] = []
-
-    photo_entries.map( (photo_entry) => {
-        let respective_photo_url = `/photo/${photo_entry.photoid}.${photo_entry.format}`
-        photos.push(respective_photo_url)
-    })
-
-    return response.code(Globals.HttpStatusCode.Ok).type('text/json').send(photos)
+    return response.code(Globals.HttpStatusCode.Ok).type('text/json').send(photo_entries)
 
 }

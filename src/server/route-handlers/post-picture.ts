@@ -22,6 +22,6 @@ export default async function PostPictureRouteHandler ( request: ExtendedFastify
         let username = await DatabaseQueries.GetUsernameBySessionID(request.cookies.sessionid)
         let albumid = (request.params as any)?.id ?? ''
         await DatabaseQueries.RecordNewPicture(username, albumid, body.photo_id, body.photo_format)
-        return reply.code(Globals.HttpStatusCode.Ok).send()
+        return reply.type("text/plain").code(Globals.HttpStatusCode.Ok).send(body.photo_id)
     }
 }
