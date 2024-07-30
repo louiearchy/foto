@@ -101,7 +101,7 @@ function LinkPathToFile(request_path: string, filepath: string, server) {
 
 function DownResolutePhoto(path_to_photo: string): Promise<string> {
     return new Promise( (resolve, reject) => {
-        let path_to_output_photo = path_to_photo.replace("built/", "built/thumbnail-")
+        let path_to_output_photo = path_to_photo.replace("built/", "built/images/thumbnails/")
         const client = net.createConnection({ port: 3001, host: 'localhost' }, () => {
             client.write(`DOWN-RESOLUTE ${path_to_photo} ${path_to_output_photo}`)
         })

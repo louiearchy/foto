@@ -297,6 +297,12 @@ def SetupDatabase():
     
     return True
 
+def SetupImageProcessingService():
+
+    thumbnail_directory_path = "built/images/thumbnails/"
+    if os.path.exists(thumbnail_directory_path) == False:
+        os.mkdirs(thumbnail_directory_path)
+
 if __name__ == "__main__":
 
     try:
@@ -307,6 +313,8 @@ if __name__ == "__main__":
         building_server_process = BuildServer()
         is_building_server_successful = building_server_process.returncode == 0
         ExitOnFail( is_building_server_successful, "failed to build the server!" )
+
+        SetupImageProcessingService()
 
         ExitOnFail( SetupDatabase() )
         ExitOnFail( RunImageProcessingService() )
