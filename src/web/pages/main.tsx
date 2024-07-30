@@ -408,7 +408,9 @@ function AlbumView() {
         SetAlbumThumbnailPhotos([...new_thumbnail_photos])
     }
     function RemovePhotoFromAlbumPhotos(given_photo_url: string) {
-        let new_photos = thumbnail_photos.filter((photo_url) => photo_url != given_photo_url)
+        let photo_id = given_photo_url.split("/").reverse()[0].split(".")[0]
+        let thumbnail_photo_url = `/thumbnail/${photo_id}`
+        let new_photos = thumbnail_photos.filter((photo_url) => photo_url != thumbnail_photo_url)
         // might dereference the array for garbage collection, since we create a new
         // array with the filter function
         thumbnail_photos = []
