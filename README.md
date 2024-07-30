@@ -9,6 +9,7 @@ available in your `PATH` environment variable.
 1. NodeJS (node)
 2. Python (python)
 3. npm
+4. ffmpeg
 ```
 
 #### Python libraries
