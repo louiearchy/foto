@@ -78,6 +78,37 @@ func CheckIfFileDoesNotExist(filepath string) bool {
 	return !CheckIfFileExists(filepath)
 }
 
+func HandleClient(client_connection net.Conn) {
+	buffer := make([]byte, 1024)
+	read_size, read_err := client_connection.Read(buffer)
+	if read_err != nil {
+		fmt.Println(read_err)
+		client_connection.Close()
+	}
+
+	// DOWN-RESOLUTE <path/to/photo> <path/to/down-resoluted/photo>
+	msg := string(buffer[:read_size])
+
+	splitted_msg := strings.Split(msg, " ")
+	command := splitted_msg[0]
+	path_to_photo := splitted_msg[1]
+	path_to_output := splitted_msg[2]
+
+	if command != "DOWN-RESOLUTE" {
+		client_connection.Write([]byte("INVALID COMMAND GIVEN"))
+		client_connection.Close()
+	}
+
+	if CheckIfFileDoesNotExist(path_to_photo) {
+		client_connection.Write([]byte("FILE DOES NOT EXIST"))
+		client_connection.Close()
+	}
+
+	DownResolutePhoto(path_to_photo, path_to_output, IDEAL_MAXIMUM_RESOLUTION)
+	client_connection.Write([]byte("OK"))
+	client_connection.Close()
+}
+
 func main() {
 
 	server_address := "localhost:3001"
@@ -106,34 +137,9 @@ func main() {
 			fmt.Println(err)
 			continue
 		}
-		buffer := make([]byte, 1024)
-		read_size, read_err := client_connection.Read(buffer)
-		if read_err != nil {
-			fmt.Println(read_err)
-			client_connection.Close()
-		}
 
-		// DOWN-RESOLUTE <path/to/photo> <path/to/down-resoluted/photo>
-		msg := string(buffer[:read_size])
+		go HandleClient(client_connection)
 
-		splitted_msg := strings.Split(msg, " ")
-		command := splitted_msg[0]
-		path_to_photo := splitted_msg[1]
-		path_to_output := splitted_msg[2]
-
-		if command != "DOWN-RESOLUTE" {
-			client_connection.Write([]byte("INVALID COMMAND GIVEN"))
-			client_connection.Close()
-		}
-
-		if CheckIfFileDoesNotExist(path_to_photo) {
-			client_connection.Write([]byte("FILE DOES NOT EXIST"))
-			client_connection.Close()
-		}
-
-		DownResolutePhoto(path_to_photo, path_to_output, IDEAL_MAXIMUM_RESOLUTION)
-		client_connection.Write([]byte("OK"))
-		client_connection.Close()
 	}
 
 }
