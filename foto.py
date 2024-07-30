@@ -301,7 +301,7 @@ def SetupImageProcessingService():
 
     thumbnail_directory_path = "built/images/thumbnails/"
     if os.path.exists(thumbnail_directory_path) == False:
-        os.mkdirs(thumbnail_directory_path)
+        os.makedirs(thumbnail_directory_path)
 
 if __name__ == "__main__":
 
