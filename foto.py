@@ -110,50 +110,6 @@ def SetupFotoDatabase():
         create_foto_database_cmd = "CREATE DATABASE fotodb"
         cursor.execute(create_foto_database_cmd)
 
-def SetupTablesOnDatabase():
-    
-    cursor = FOTO_DATABASE_CONNECTION.cursor()
-    create_accounts_table_cmd = """
-        CREATE TABLE IF NOT EXISTS accounts (
-            username varchar(255) NOT NULL,
-            password varchar(255) NOT NULL,
-            PRIMARY KEY (username)
-        )
-    """
-    cursor.execute(create_accounts_table_cmd)
-
-    create_sessions_table_cmd = """
-        CREATE TABLE IF NOT EXISTS sessions (
-            username varchar(255) NOT NULL,
-            sessionid varchar(255) NOT NULL,
-            PRIMARY KEY (sessionid)
-        )
-    """
-    cursor.execute(create_sessions_table_cmd)
-
-
-    create_albums_table_cmd = """
-        CREATE TABLE IF NOT EXISTS albums (
-            username varchar(255) NOT NULL,
-            albumid varchar(255) NOT NULL,
-            album_name varchar(255) NOT NULL,
-            PRIMARY KEY (albumid)
-        )
-    """
-    cursor.execute(create_albums_table_cmd)
-
-
-    create_pictures_table_cmd = """
-        CREATE TABLE IF NOT EXISTS photos (
-            username varchar(255) NOT NULL,
-            albumid varchar(255) NULL,
-            photoid varchar(255) NOT NULL,
-            format varchar(10) NOT NULL,
-            PRIMARY KEY (photoid)
-        )
-    """
-    cursor.execute(create_pictures_table_cmd)
-    FOTO_DATABASE_CONNECTION.commit()
 
 def CloseConnectionIfExists(connection: psycopg.Connection):
     if connection != None:
@@ -244,6 +200,10 @@ def SetupDatabaseCluster():
                 print(f"Successfully created database cluster! {DEFAULT_DATABASE_CLUSTER_PATH}")
                 return True
 
+def SetupFotoDatabaseSchema():
+    process = RunShellCommand(f"psql -d fotodb -f src/database-schema.sql --quiet") 
+    return process.returncode == 0
+
 def SetupDatabaseNTables():
 
     print("Establishing connection to postgres database...")
@@ -253,12 +213,9 @@ def SetupDatabaseNTables():
     print("Setting up foto database...")
     SetupFotoDatabase()
 
-    print("Establishing connection to foto database...")
-    if FunctionFailed( EstablishFotoDatabaseServerConnection(timeout=30) ):
+    print("Defining database schema...")
+    if FunctionFailed(SetupFotoDatabaseSchema()):
         return False
-    
-    print("Setting up tables in foto database...")
-    SetupTablesOnDatabase()
 
     return True
 
