@@ -274,6 +274,25 @@ namespace FotoBackendAPI {
         return ""
     }
 
+    export function DeleteAlbum(album_id: string, onCompleteCallbackFn: () => void) {
+
+        let url = `/album/${album_id}`
+
+        $.ajax({
+            method: 'DELETE',
+            url: url
+        }).then(
+            () => {
+                albums = albums.filter( (album_entry) => {
+                    if (album_entry?.albumid != album_id)
+                        return album_entry
+                })
+                onCompleteCallbackFn()
+            }
+        )
+
+    }
+
 } // FotoBackendAPI
 
 
@@ -284,7 +303,16 @@ function Album(props) {
                 /* if there's an image preview available */ <img src={ (props?.imgSrc) ? props.imgSrc : "" } /> :
                 /* if there's no image */ <div className="album-blank-preview"></div>
         }
-        <ReactRouterDOM.Link to={props?.link}>{props?.name}</ReactRouterDOM.Link>
+        <div className="info">
+            <ReactRouterDOM.Link to={props?.link}>{props?.name}</ReactRouterDOM.Link>
+
+            { 
+                props?.name != "All Photos" && 
+                <button onClick={() => {props?.DeleteAlbum(props?.albumid)}}>
+                    <img src='/assets/svgs/trash-bin-minimalistic-svgrepo-com-black.svg'/>
+                </button>
+            }
+        </div>
     </div>
 }
 
@@ -299,6 +327,10 @@ function AlbumsView() {
     // --------------------------------------------------
     function UpdateListOfAlbums() {
         SetListOfAlbums(FotoBackendAPI.GetAlbums())
+    }
+
+    function DeleteAlbum(albumid: string) {
+        FotoBackendAPI.DeleteAlbum(albumid, UpdateListOfAlbums)
     }
 
     function HideCreateAlbumPrompt() {
@@ -374,6 +406,8 @@ function AlbumsView() {
                         return <Album 
                             name={albumEntry.album_name} 
                             key={albumEntry.albumid}
+                            albumid={albumEntry.albumid}
+                            DeleteAlbum={DeleteAlbum}
                             link={albumlink}
                         /> 
                     })

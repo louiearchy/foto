@@ -16,6 +16,7 @@ import UtilsID from './utility/id'
 import AlbumNameRouteHandler from './route-handlers/album-name'
 import AssetsRouteHandler from './route-handlers/assets'
 import CreateAlbumRouteHandler from './route-handlers/create-album'
+import DeleteAlbumRouteHandler from './route-handlers/delete-album'
 import DeletePhotoRouteHandler from './route-handlers/delete-photo'
 import GetAlbumsListRouteHandler from './route-handlers/albums-list'
 import HomepageRouteHandler from './route-handlers/homepage'
@@ -184,6 +185,7 @@ SERVER.post("/new/album", CreateAlbumRouteHandler)
 SERVER.post("/to/album/:id?", PostPictureRouteHandler)
 
 SERVER.delete('/photo/:id', DeletePhotoRouteHandler)
+SERVER.delete('/album/:id', DeleteAlbumRouteHandler)
 
 LinkPathToFile("/react", "node_modules/react/umd/react.development.js", SERVER)
 LinkPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", SERVER)

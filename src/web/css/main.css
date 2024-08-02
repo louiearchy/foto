@@ -92,19 +92,52 @@ body {
    background-color: #f0f0f0;
 }
 
-.album > a {
+.album > .info {
+    display: flex;
+    margin-top: 0.2cm;
+    flex-direction: row;
+    width: 100%;
+}
+
+.album:hover > .info > button {
+    display: block;
+}
+
+.album > .info > a {
     border: none;
     background-color: transparent;
     font-family: 'Poppins';
-    font-size: 1.2em;
-    margin-top: 0.15cm;
+    font-weight: 700;
+    font-size: 1em;
     color: black;
     text-decoration: none;
+    width: calc(100% - 0.6cm);
+    text-align: left;
 }
 
-.album > a:hover {
+.album > .info > a:hover {
     color: #FFA62F;
-    text-decoration: underline;
+}
+
+.album > .info > button {
+    display: none;
+    background-color: transparent;
+    border: none;
+}
+
+.album > .info > button:focus {
+    outline: none;
+}
+
+.album > .info > button:hover, 
+.album > .info > button:active {
+    background-color: #d6d6d6;
+    border-radius: 50%;
+}
+
+.album > .info > button > img {
+    height: 0.6cm;
+    width: 0.6cm;
 }
 
 #create-album-prompt {
@@ -317,6 +350,9 @@ body {
         height: 100%;
         width: 100%;
     }
+    .album > .info > button {
+        display: block;
+    }
 }
 
 /* tablet viewport */
@@ -347,5 +383,8 @@ body {
         --image-dimension: calc(calc(100vw - 1cm) / 6);
         width: var(--image-dimension);
         height: var(--image-dimension);
+    }
+    .album > .info > button {
+        display: block;
     }
 }

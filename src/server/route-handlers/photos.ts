@@ -4,11 +4,7 @@ import { FastifyReply } from 'fastify'
 
 import Globals from '../globals'
 import DatabaseQueries from '../database-queries'
-
-interface PhotoEntry {
-    photoid: string,
-    format: string
-}
+import { PhotoEntry } from '../interfaces'
 
 /**
  * Handler for requesting list of photos in a specific album

@@ -1,4 +1,5 @@
 
+import { PhotoEntry } from "./interfaces"
 import Globals from "./globals"
 
 
@@ -83,7 +84,9 @@ async function RecordNewPicture( username: string, album_id: string | undefined,
 
 
 async function GetAlbums(username: string): Promise<AlbumEntries> {
-    let query = await Globals.FotoDbClient.query(`SELECT album_name, albumid FROM albums WHERE username='${username}'`)
+    let query = await Globals.FotoDbClient.query(
+        `SELECT album_name, albumid FROM albums WHERE username='${username}' AND is_deleted = false`
+    )
     return (query.rows as AlbumEntries)
 }
 
@@ -101,11 +104,11 @@ async function IsSessionIdValid(sessionid: string): Promise<boolean> {
     return Promise.resolve(query.rows[0]?.exists ?? false)
 }
 
-async function GetPhotosOfAlbum(username: string, albumid: string) {
+async function GetPhotosOfAlbum(username: string, albumid: string): Promise<PhotoEntry[]> {
     let query = await Globals.FotoDbClient.query(
         `SELECT photoid, format FROM photos WHERE username='${username}' AND albumid='${albumid}'`
     )
-    return Promise.resolve(query.rows)
+    return Promise.resolve(query.rows as PhotoEntry[])
 }
 
 async function GetAllPhotos(username: string) {
@@ -120,6 +123,27 @@ async function CheckPhotoResourceOwnership(username: string, photoid: string): P
         `SELECT EXISTS (SELECT * FROM photos WHERE username='${username}' AND photoid='${photoid}')`
     )
     return Promise.resolve(query.rows[0]?.exists ?? false)
+}
+
+async function CheckAlbumOwnership(username: string, albumid: string): Promise<boolean> {
+    let query = await Globals.FotoDbClient.query(
+        `SELECT EXISTS (SELECT * FROM albums WHERE username='${username}' AND albumid='${albumid}')`
+    )
+    return Promise.resolve(query.rows[0]?.exists ?? false)
+}
+
+async function DeleteAlbum(username: string, albumid: string): Promise<void> {
+   await Globals.FotoDbClient.query(
+        `UPDATE albums SET is_deleted = true WHERE albumid = '${albumid}' AND username = '${username}'`
+   ) 
+   return Promise.resolve()
+}
+
+async function DeletePhotosFromAlbum(username: string, albumid: string): Promise<void> {
+    await Globals.FotoDbClient.query(
+        `DELETE FROM photos WHERE username = '${username}' AND albumid = '${albumid}'`
+    )
+    return Promise.resolve()
 }
 
 async function DeletePhoto(username: string, photoid: string): Promise<void> {
@@ -155,5 +179,8 @@ export default {
     GetAllPhotos,
     DeletePhoto,
     GetPhotoStorageLocation,
-    GetTruePathOfPicture
+    GetTruePathOfPicture,
+    CheckAlbumOwnership,
+    DeleteAlbum,
+    DeletePhotosFromAlbum
 }

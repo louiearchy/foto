@@ -18,3 +18,8 @@ export interface ExtendedFastifyRequest extends FastifyRequest {
     IsNotOnSession?: () => Promise<boolean>,
     IsOnSession: () => Promise<boolean>
 }
+
+export interface PhotoEntry {
+    photoid: string,
+    format: string
+}
