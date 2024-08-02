@@ -10,6 +10,7 @@ available in your `PATH` environment variable.
 2. Python (python)
 3. npm
 4. ffmpeg
+5. go (GoLang)
 ```
 
 #### Python libraries
