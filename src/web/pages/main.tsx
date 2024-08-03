@@ -234,6 +234,17 @@ namespace FotoBackendAPI {
         }
     }
 
+    function GetFileExtension(filename: string): string {
+        let file_extension = filename.split('.').reverse()[0].toLowerCase()
+        switch (file_extension) {
+            case 'jpg':
+            case 'jpeg':
+                return 'jpeg'
+            default:
+                return file_extension
+        }
+    }
+
     async function UploadPhoto(file: File, onCompleteCallbackFn: (photo_id: string) => void) {
         let xhr = new XMLHttpRequest()
         let url = `/to/album/${GetCurrentAlbumID()}`
@@ -242,7 +253,13 @@ namespace FotoBackendAPI {
         let image_data = await file.arrayBuffer()
         xhr.onreadystatechange = function() {
             if (xhr.readyState == xhr.DONE && xhr.status == 200 /* Ok */ ) {
-                onCompleteCallbackFn(xhr.responseText)
+                let photoid = xhr.responseText
+                let format = GetFileExtension(file.name)
+                current_album_photo_entries.push({
+                    photoid,
+                    format 
+                })
+                onCompleteCallbackFn(photoid)
             }
         }
         xhr.send(image_data)
