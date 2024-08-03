@@ -35,7 +35,6 @@ export default async function DeletePhotoRouteHandler(request: ExtendedFastifyRe
     if (await UtilsFile.IsFileExisting(thumbnail_storage_location))
         await fsPromise.rm(thumbnail_storage_location)
  
-    await fsPromise.rm(thumbnail_storage_location)
     await DatabaseQueries.DeletePhoto(username, photo_id)
     return reply.code(Globals.HttpStatusCode.Ok).send()
 
