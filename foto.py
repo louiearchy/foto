@@ -1,8 +1,6 @@
 
 import subprocess
-import sys
 import os
-import zipfile
 import psycopg
 import datetime
 
