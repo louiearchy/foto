@@ -236,11 +236,12 @@ body {
 }
 
 #album-view-photos-container {
+    --image-dimension: calc(calc(100vw - 2cm) / 8);
     height: 100%;
     box-sizing: border-box;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, var(--image-dimension));
+    grid-template-rows: repeat(auto-fill, var(--image-dimension));
     padding: 0.5cm 0;
     overflow-y: scroll;
 }
