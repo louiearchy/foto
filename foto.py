@@ -5,6 +5,7 @@ import os
 import psycopg
 import sys
 import datetime
+import shutil
 
 PATH = os.getenv("PATH").split(";")
 PATH.pop() # this removes the empty string at the end
@@ -351,8 +352,23 @@ def CleanData():
 
     FreeDatabaseRelatedResources()
 
+def DeleteDir(dirpath: str):
+    if os.path.exists(dirpath):
+        shutil.rmtree(dirpath)
+
 def HardReset():
-    pass
+    
+    Log.info("deleting database cluster...")
+    if os.path.exists("built/database-cluster/"):
+        shutil.rmtree("built/database-cluster/")
+    
+    Log.info("deleting photos...")
+    DeleteDir("built/images/")
+
+    Log.info("deleting compiled files...")
+    DeleteFilesByGlob("built/*.json")
+    DeleteDir("built/server/")
+    DeleteDir("built/web/")
 
 if __name__ == "__main__":
 
@@ -370,6 +386,9 @@ if __name__ == "__main__":
 
             case "clean-data":
                 CleanData()
+
+            case "hard-reset":
+                HardReset()
             
             case _:
                 Log.error(f"unrecognized task: {task}")
