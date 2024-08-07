@@ -1,11 +1,14 @@
 
+import glob
 import subprocess
 import os
 import psycopg
+import sys
 import datetime
 
 PATH = os.getenv("PATH").split(";")
 PATH.pop() # this removes the empty string at the end
+CLI_ARGS = sys.argv[1:]
 
 DEFAULT_DATABASE_CLUSTER_PATH = "built/database-cluster/"
 SERVER_DATABASE_HOST = "localhost"
@@ -282,8 +285,7 @@ def SetupImageProcessingService():
     if os.path.exists(thumbnail_directory_path) == False:
         os.makedirs(thumbnail_directory_path)
 
-if __name__ == "__main__":
-
+def RunDevelopmentServer():
     try:
 
         ExitOnFail(CheckIfOnPath("ffmpeg"), "ffmpeg is needed!")
@@ -311,3 +313,63 @@ if __name__ == "__main__":
         ShutdownImageProcessingService()
         Log.info("exiting...")
         exit(0)
+
+def DeleteFilesByGlob(glob_expr: str):
+    for file in glob.iglob(glob_expr):
+        os.remove(file)
+
+def DeletePhotos():
+
+    DeleteFilesByGlob("built/images/thumbnails/*")
+    DeleteFilesByGlob("built/*.jpeg")
+    DeleteFilesByGlob("built/*.png")
+    DeleteFilesByGlob("built/*.webp")
+    DeleteFilesByGlob("built/*.jpg")
+
+def CleanData():
+
+    global FOTO_DATABASE_CONNECTION
+
+    Log.info("cleaning data...")
+
+    if FunctionFailed( RunDatabaseServer() ):
+        return
+
+    if FunctionFailed( EstablishFotoDatabaseServerConnection(10) ):
+        return FreeDatabaseRelatedResources()
+
+    cursor = FOTO_DATABASE_CONNECTION.cursor()
+    Log.info("deleting all records...")
+    cursor.execute("DELETE FROM accounts")
+    cursor.execute("DELETE FROM sessions")
+    cursor.execute("DELETE FROM photos")
+    cursor.execute("DELETE FROM albums")
+    FOTO_DATABASE_CONNECTION.commit()
+
+    Log.info("deleting all photos from built/...")
+    DeletePhotos()
+
+    FreeDatabaseRelatedResources()
+
+def HardReset():
+    pass
+
+if __name__ == "__main__":
+
+    no_arguments_were_given = len(CLI_ARGS) == 0
+    there_were_arguments_given = not no_arguments_were_given
+
+    if no_arguments_were_given:
+        RunDevelopmentServer()
+    
+    elif there_were_arguments_given:
+
+        task = CLI_ARGS[0].lower()
+
+        match task:
+
+            case "clean-data":
+                CleanData()
+            
+            case _:
+                Log.error(f"unrecognized task: {task}")
