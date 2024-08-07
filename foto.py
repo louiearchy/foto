@@ -15,6 +15,28 @@ POSTGRES_DATABASE_CONNECTION = None
 FOTO_DATABASE_CONNECTION = None
 IMAGE_PROCESSING_SERVICE = None
 
+class ANSI:
+    
+    ESC = "\u001b["
+
+    bold = "1m"
+
+    yellow = "33m"
+    red = "31m"
+
+    RESET = f"{ESC}0m"
+    
+
+class Log:
+
+    def info(msg):
+        print(f"{ANSI.ESC}{ANSI.bold}{ANSI.ESC}{ANSI.yellow}[foto.py]:", end=f"{ANSI.RESET} ")
+        print(msg)
+
+    def error(msg):
+        print(f"{ANSI.ESC}{ANSI.bold}{ANSI.ESC}{ANSI.red}[foto.py]:", end=f"{ANSI.RESET} ")
+        print(msg)
+
 
 class TimeoutManager:
 
@@ -29,8 +51,11 @@ class TimeoutManager:
         ending_time = datetime.datetime.now()
         return (self.starting_time - ending_time).total_seconds() >= self.timeout
 
-def RunShellCommand(cmd: str):
-    return subprocess.run(cmd, shell=True)
+def RunShellCommand(cmd: str, no_output: bool = False):
+    if no_output:
+        return subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        return subprocess.run(cmd, shell=True)
 
 def BuildServer():
     cmd = "npx tsc --project ./src/server/tsconfig.json"
@@ -43,7 +68,7 @@ def RunServer():
 def ExitOnFail(condition: bool, message_when_process_fails: str | None = None):
     if condition == False:
         if message_when_process_fails != None:
-            print(message_when_process_fails)
+            Log.error(message_when_process_fails)
         exit(-1)
 
 def GetExecutablePath(executable: str):
@@ -109,12 +134,14 @@ def SetupFotoDatabase():
         cursor.execute(create_foto_database_cmd)
 
 
-def CloseConnectionIfExists(connection: psycopg.Connection):
+def CloseConnectionIfExists(connection: psycopg.Connection, msg: str = ""):
     if connection != None:
+        Log.info(msg)
         connection.close()
 
 def CloseDatabaseServer():
     if DATABASE_SERVER_PROCESS != None:
+        Log.info("closing database server...")
         DATABASE_SERVER_PROCESS.terminate()
         # wait for the database server process to terminate
         # before this script exits
@@ -122,8 +149,11 @@ def CloseDatabaseServer():
             continue
 
 def FreeDatabaseRelatedResources():
-    CloseConnectionIfExists( POSTGRES_DATABASE_CONNECTION )
-    CloseConnectionIfExists( FOTO_DATABASE_CONNECTION )
+
+    CloseConnectionIfExists( POSTGRES_DATABASE_CONNECTION,msg="closing postgres database connection..." )
+
+    CloseConnectionIfExists( FOTO_DATABASE_CONNECTION, msg="closing foto database connection..." )
+
     CloseDatabaseServer()
     
 
@@ -132,7 +162,7 @@ def FunctionFailed(value: bool):
 
 def CheckPostgreSqlTools():
     
-    print("Checking postgresql tools...")
+    Log.info("checking postgresql tools...")
 
     is_initdb_on_path = CheckIfOnPath("initdb")
     is_postgres_on_path = CheckIfOnPath("postgres")
@@ -151,17 +181,8 @@ def CheckPostgreSqlTools():
     is_with_missing_postgresql_tools = len(missing_postgresql_tools) > 0
         
     if is_with_missing_postgresql_tools:
-        print("Missing postgresql tools: ", end="")
-        no_of_missing_postgresql_tools = len(missing_postgresql_tools)
-        index = 0
-        for missing_tool in missing_postgresql_tools:
-            if index < no_of_missing_postgresql_tools - 1:
-                print(missing_tool, end=", ")
-                index += 1
-            else:
-                print(missing_tool)
-                index += 1
-        print("Please check if they are installed correctly!")
+        Log.error(f"missing postgresql tools: {','.join(missing_postgresql_tools)}")
+        Log.error("please check if they are installed correctly")
 
     is_checking_successful = is_with_missing_postgresql_tools == False
     return is_checking_successful
@@ -170,48 +191,50 @@ def IsDatabaseClusterExisting():
     return os.path.isdir(DEFAULT_DATABASE_CLUSTER_PATH)
 
 def RunDatabaseServer():
-    print("Running database server...")
+    Log.info("running database server...")
     global DATABASE_SERVER_PROCESS
     postgres = GetExecutablePath("postgres")
     try:
         DATABASE_SERVER_PROCESS = subprocess.Popen(
-            [postgres, "-D", DEFAULT_DATABASE_CLUSTER_PATH]
+            [postgres, "-D", DEFAULT_DATABASE_CLUSTER_PATH],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
         )
         return True
     except OSError:
-        print("failed to run the database server!")
+        Log.info("failed to run the database server!")
         return False
 
 
 def SetupDatabaseCluster():
     if IsDatabaseClusterExisting() == False:
-        print(f"Creating database cluster... {DEFAULT_DATABASE_CLUSTER_PATH}")
+        Log.info(f"creating database cluster {DEFAULT_DATABASE_CLUSTER_PATH}")
         command = f"initdb -D {DEFAULT_DATABASE_CLUSTER_PATH}"
-        process = RunShellCommand(command)
+        process = RunShellCommand(command, no_output=True)
         if process.returncode != 0:
             return False
         else:
             if os.path.isdir(DEFAULT_DATABASE_CLUSTER_PATH) == False:
-                print("failed to create database cluster!")
+                Log.error("failed to create database cluster!")
                 return False
             else:
-                print(f"Successfully created database cluster! {DEFAULT_DATABASE_CLUSTER_PATH}")
+                Log.error(f"Successfully created database cluster! {DEFAULT_DATABASE_CLUSTER_PATH}")
                 return True
 
 def SetupFotoDatabaseSchema():
-    process = RunShellCommand(f"psql -d fotodb -f src/database-schema.sql --quiet") 
+    process = RunShellCommand(f"psql -d fotodb -f src/database-schema.sql --quiet", no_output=True) 
     return process.returncode == 0
 
 def SetupDatabaseNTables():
 
-    print("Establishing connection to postgres database...")
+    Log.info("establishing connection to postgres database...")
     if FunctionFailed( EstablishPostgresDatabaseServerConnection(timeout=30) ):
         return False
 
-    print("Setting up foto database...")
+    Log.info("setting up foto database...")
     SetupFotoDatabase()
 
-    print("Defining database schema...")
+    Log.info("defining database schema...")
     if FunctionFailed(SetupFotoDatabaseSchema()):
         return False
 
@@ -220,6 +243,7 @@ def SetupDatabaseNTables():
 def ShutdownImageProcessingService():
     global IMAGE_PROCESSING_SERVICE
     if IMAGE_PROCESSING_SERVICE != None:
+        Log.info("shutting down image processing service...")
         IMAGE_PROCESSING_SERVICE.terminate()
 
 def RunImageProcessingService():
@@ -230,7 +254,7 @@ def RunImageProcessingService():
         )
         return True
     except OSError:
-        print("failed to run the database server!")
+        Log.error("failed to run the database server!")
         return False
 
 
@@ -265,20 +289,25 @@ if __name__ == "__main__":
         ExitOnFail(CheckIfOnPath("ffmpeg"), "ffmpeg is needed!")
         ExitOnFail(CheckIfOnPath("go"), "go is needed!")
 
+        Log.info("building server...")
         building_server_process = BuildServer()
         is_building_server_successful = building_server_process.returncode == 0
         ExitOnFail( is_building_server_successful, "failed to build the server!" )
 
+        Log.info("building image processing service...")
         SetupImageProcessingService()
 
+        Log.info("setting up database...")
         ExitOnFail( SetupDatabase() )
         ExitOnFail( RunImageProcessingService() )
 
         RunServer()
 
     except KeyboardInterrupt:
+
+        Log.info("heard a keyboard interrupt, shutting down services!")
         FreeDatabaseRelatedResources()
+
         ShutdownImageProcessingService()
-        print("") # we use this as most terminals prints ' ^C ' which obscures our print
-        print("Exiting...")
+        Log.info("exiting...")
         exit(0)

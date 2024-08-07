@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	_ "image/jpeg"
-	"log"
 	"math"
 	"net"
 	"os"
@@ -109,6 +108,10 @@ func HandleClient(client_connection net.Conn) {
 	client_connection.Close()
 }
 
+func info(msg string) {
+	fmt.Printf("\u001b[1m\u001b[94m[imgproc]:\u001b[0m %s\n", msg)
+}
+
 func main() {
 
 	server_address := "localhost:3001"
@@ -118,15 +121,15 @@ func main() {
 
 	listener, listen_err := net.Listen("tcp", server_address)
 	if listen_err != nil {
-		log.Fatal(listen_err)
+		info(listen_err.Error())
 	}
 
-	fmt.Printf("Image processing service is now running at %s\n", server_address)
+	info(fmt.Sprintf("image processing service is now running at %s", server_address))
 
 	go func() {
 		signal_value := <-signal_channel
-		fmt.Println(signal_value.String())
-		fmt.Println("Image processing service is now exiting...")
+		info(fmt.Sprintf("detected %s", signal_value))
+		info("image processing service is now exiting...")
 		listener.Close()
 		os.Exit(0)
 	}()

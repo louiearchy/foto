@@ -30,6 +30,12 @@ import SignUpRouteHandler from './route-handlers/sign-up'
 import SpecificAlbumPageRouteHandler from './route-handlers/specific-album-page'
 import ThumbnailRouteHandler from './route-handlers/thumbnail'
 
+namespace ANSI {
+    export let ESC = "\u001b["
+    export let BOLD = "1m"
+    export let light_blue = "94m"
+    export let RESET = `${ANSI.ESC}0m`
+}
 
 const SERVER_HOST = 'localhost'
 const SERVER_PORT = 3000
@@ -205,7 +211,8 @@ function OnServerListenCallback(error: Error) {
         console.log(error)
         Exit(-1)
     }
-    console.log(`The development server is now running at http://${SERVER_HOST}:${SERVER_PORT}`)
+    let label = `${ANSI.ESC}${ANSI.BOLD}${ANSI.ESC}${ANSI.light_blue}[server]:${ANSI.RESET}`
+    console.log(`${label} The development server is now running at http://${SERVER_HOST}:${SERVER_PORT}`)
 }
 
 async function main() {
