@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import fsPromise from 'node:fs/promises'
 import net from 'node:net'
 import nodepath from 'node:path'
+import process from 'node:process'
 
 import DatabaseQueries from './database-queries'
 import Globals from './globals'
@@ -38,8 +39,8 @@ namespace ANSI {
     export let RESET = `${ANSI.ESC}0m`
 }
 
-const SERVER_HOST = 'localhost'
-const SERVER_PORT = 3000
+const SERVER_HOST = process.argv[2]
+const SERVER_PORT = parseInt(process.argv[3])
 const SERVER_CONFIG = { host: SERVER_HOST, port: SERVER_PORT }
 
 const SERVER = Fastify()

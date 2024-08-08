@@ -40,6 +40,16 @@ python foto.py
 This script automatically takes care of the building of the server, and then as it succesfully
 builds the server, it will then run the development server.
 
+### Running Server on different IP address
+
+To run the development server on a different ip address other than the `localhost` (which is the default),
+just do the following command:
+
+```
+python foto.py --host=<host>
+```
+
+
 
 ### Other tasks
 Use these tasks to make your development easier:

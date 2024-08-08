@@ -3,6 +3,7 @@ import glob
 import subprocess
 import os
 import psycopg
+import re
 import sys
 import datetime
 import shutil
@@ -66,8 +67,8 @@ def BuildServer():
     process = RunShellCommand(cmd)
     return process
 
-def RunServer():
-    return RunShellCommand("node ./built/server/server.js")
+def RunServer(host: str, port: int):
+    return RunShellCommand(f"node ./built/server/server.js {host} {port}")
 
 def ExitOnFail(condition: bool, message_when_process_fails: str | None = None):
     if condition == False:
@@ -290,7 +291,15 @@ def SetupImageProcessingService():
     if os.path.exists(photos_directory_path) == False:
         os.makedirs(photos_directory_path)
 
-def RunDevelopmentServer():
+def FotoPyExit():
+    Log.info("heard a keyboard interrupt, shutting down services!")
+    FreeDatabaseRelatedResources()
+
+    ShutdownImageProcessingService()
+    Log.info("exiting...")
+    exit(0)
+
+def RunDevelopmentServer(host: str = "localhost", port: int = 3000):
     try:
 
         ExitOnFail(CheckIfOnPath("ffmpeg"), "ffmpeg is needed!")
@@ -308,16 +317,11 @@ def RunDevelopmentServer():
         ExitOnFail( SetupDatabase() )
         ExitOnFail( RunImageProcessingService() )
 
-        RunServer()
+        RunServer(host, port)
 
     except KeyboardInterrupt:
-
-        Log.info("heard a keyboard interrupt, shutting down services!")
-        FreeDatabaseRelatedResources()
-
-        ShutdownImageProcessingService()
-        Log.info("exiting...")
-        exit(0)
+        FotoPyExit()
+        
 
 def DeleteFilesByGlob(glob_expr: str):
     for file in glob.iglob(glob_expr):
@@ -380,6 +384,11 @@ if __name__ == "__main__":
         RunDevelopmentServer()
     
     elif there_were_arguments_given:
+
+        if re.match("--host=\\d+", CLI_ARGS[0]):
+            host = CLI_ARGS[0].replace("--host=", "")
+            RunDevelopmentServer(host, 80)
+            FotoPyExit()
 
         task = CLI_ARGS[0].lower()
 
