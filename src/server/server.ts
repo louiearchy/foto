@@ -4,6 +4,7 @@ import Fastify from 'fastify'
 import fs from 'node:fs'
 import fsPromise from 'node:fs/promises'
 import net from 'node:net'
+import nodepath from 'node:path'
 
 import DatabaseQueries from './database-queries'
 import Globals from './globals'
@@ -107,27 +108,16 @@ function LinkPathToFile(request_path: string, filepath: string, server) {
     })
 }
 
-function ReplaceFileExtension(filepath: string, to_file_extension: string): string {
-    let splitted_filepath_by_dot = filepath.split(".")
-    let returning_replaced_file_extension_filepath = ""
-    for (let i = 0; i < splitted_filepath_by_dot.length; i++) {
-        let is_at_the_end = (i == (splitted_filepath_by_dot.length - 1))
-        if (is_at_the_end) {
-            returning_replaced_file_extension_filepath += to_file_extension
-        } else {
-            returning_replaced_file_extension_filepath += splitted_filepath_by_dot[i]
-        }
-    }
-    return returning_replaced_file_extension_filepath
-}
+
 
 function DownResolutePhoto(path_to_photo: string): Promise<string> {
     return new Promise( (resolve, reject) => {
-        let path_to_output_photo = path_to_photo.replace("built/", "built/images/thumbnails/")
-        path_to_output_photo = ReplaceFileExtension(path_to_output_photo, ".webp")
+        let filename = UtilsFile.GetFilenameFromFilePath(path_to_photo)
+        filename = UtilsFile.ReplaceFileExtension(filename, ".webp")
+        let path_to_thumbnail_output = nodepath.join(Globals.StorageLocation.ForThumbnails, filename)
 
         const client = net.createConnection({ port: 3001, host: 'localhost' }, () => {
-            client.write(`DOWN-RESOLUTE ${path_to_photo} ${path_to_output_photo}`)
+            client.write(`DOWN-RESOLUTE ${path_to_photo} ${path_to_thumbnail_output}`)
         })
         client.on('data', function(data) {
             let message = data.toString('utf-8')
@@ -152,7 +142,7 @@ SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
 
         let unique_photo_id = UtilsID.GeneratePhotoSessionToken()
         let photo_format = UtilsFile.DeduceFileExtensionByContentType(request.headers?.["content-type"] ?? "")
-        let filepath = `built/${unique_photo_id}.${photo_format}`
+        let filepath = nodepath.join(Globals.StorageLocation.ForPhotos, `${unique_photo_id}.${photo_format}`)
         let file_write_stream = fs.createWriteStream(filepath)
         
         payload.on('data', function (chunk: Buffer) {

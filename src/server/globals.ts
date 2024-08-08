@@ -41,8 +41,14 @@ const FOTODB_CONNECTION_CONFIG = {
 }
 const FotoDbClient = new pg.Client(FOTODB_CONNECTION_CONFIG)
 
+const StorageLocation = {
+    ForPhotos: 'built/data/photos',
+    ForThumbnails: 'built/data/thumbnails'
+}
+
 export default {
     DynamicReactPageManagerInstance,
     FotoDbClient,
     HttpStatusCode,
+    StorageLocation,
 }

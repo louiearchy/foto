@@ -282,9 +282,13 @@ def SetupDatabase():
 
 def SetupImageProcessingService():
 
-    thumbnail_directory_path = "built/images/thumbnails/"
+    thumbnail_directory_path = "built/data/thumbnails/"
     if os.path.exists(thumbnail_directory_path) == False:
         os.makedirs(thumbnail_directory_path)
+    
+    photos_directory_path = "built/data/photos/"
+    if os.path.exists(photos_directory_path) == False:
+        os.makedirs(photos_directory_path)
 
 def RunDevelopmentServer():
     try:
@@ -321,11 +325,8 @@ def DeleteFilesByGlob(glob_expr: str):
 
 def DeletePhotos():
 
-    DeleteFilesByGlob("built/images/thumbnails/*")
-    DeleteFilesByGlob("built/*.jpeg")
-    DeleteFilesByGlob("built/*.png")
-    DeleteFilesByGlob("built/*.webp")
-    DeleteFilesByGlob("built/*.jpg")
+    DeleteFilesByGlob("built/data/thumbnails/*")
+    DeleteFilesByGlob("built/data/photos/*")
 
 def CleanData():
 
@@ -363,7 +364,7 @@ def HardReset():
         shutil.rmtree("built/database-cluster/")
     
     Log.info("deleting photos...")
-    DeleteDir("built/images/")
+    DeleteDir("built/data/photos/")
 
     Log.info("deleting compiled files...")
     DeleteFilesByGlob("built/*.json")

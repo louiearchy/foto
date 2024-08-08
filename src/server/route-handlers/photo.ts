@@ -1,5 +1,6 @@
 
 import { FastifyReply } from 'fastify'
+import nodepath from 'node:path'
 
 import DatabaseQueries from '../database-queries'
 import { ExtendedFastifyRequest } from '../interfaces'
@@ -20,7 +21,7 @@ export default async function PhotoRouteHandler( request: ExtendedFastifyRequest
     if (client_doesnt_own_photo_resource)
         return reply.code(Globals.HttpStatusCode.Unauthorized).send()
 
-    let true_path_to_photo_resource = `./built/${photo_resource}`
+    let true_path_to_photo_resource = nodepath.join(Globals.StorageLocation.ForPhotos, photo_resource)
     let photo_resource_doesnt_exist = !(await UtilsFile.IsFileExisting(true_path_to_photo_resource))
     let photo_mime_type = UtilsFile.DeduceMimeTypeByFileExtension(true_path_to_photo_resource)
 

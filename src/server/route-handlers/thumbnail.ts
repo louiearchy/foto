@@ -2,6 +2,7 @@
 
 import { ExtendedFastifyRequest } from "../interfaces"
 import { FastifyReply } from 'fastify'
+import nodepath from 'node:path'
 
 import Globals from '../globals'
 import UtilsFile from '../utility/file'
@@ -10,7 +11,7 @@ import DatabaseQueries from '../database-queries'
 
 async function GetThumbnailLocation(photo_id: string): Promise<string> {
 
-    let possible_thumbnail_filepath = `built/images/thumbnails/${photo_id}.webp`
+    let possible_thumbnail_filepath = nodepath.join(Globals.StorageLocation.ForThumbnails, `${photo_id}.webp`)
     if (await UtilsFile.IsFileExisting(possible_thumbnail_filepath))
         return possible_thumbnail_filepath
 
