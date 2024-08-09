@@ -313,6 +313,9 @@ body {
     width: 100dvh;
 }
 
+* {
+    outline: solid 1px red;
+}
 
 /* mobile phone viewport */
 @media all and (max-width: 500px) {
@@ -341,11 +344,16 @@ body {
         font-size: 1em;
     }
     #album-view-photos-container > img {
-        --image-dimension: calc(calc(100vw - 1cm) / 4);
+        --no-of-image-per-row: 4;
+        --image-dimension: calc(calc(100vw - 1cm) / var(--no-of-image-per-row));
         width: var(--image-dimension);
         height: var(--image-dimension); 
     }
     #album-view-photos-container {
+        --no-of-image-per-row: 4;
+        --image-dimension: calc(calc(100vw - 1cm) / var(--no-of-image-per-row));
+        grid-template-columns: repeat(auto-fill, var(--image-dimension));
+        grid-template-rows: repeat(auto-fill, var(--image-dimension));
         row-gap: 0;
     }
     #album-view-submit-container {
