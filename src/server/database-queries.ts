@@ -153,12 +153,12 @@ async function DeletePhoto(username: string, photoid: string): Promise<void> {
     return Promise.resolve()
 }
 
-async function GetPhotoStorageLocation(username: string, photoid: string): Promise<string> {
+async function GetPhotoFilename(username: string, photoid: string): Promise<string> {
     let query = await Globals.FotoDbClient.query(
         `SELECT photoid, format FROM photos WHERE username='${username}' AND photoid='${photoid}'`
     )
-    let photo_storage_location = `built/${query.rows[0].photoid}.${query.rows[0].format}`
-    return Promise.resolve(photo_storage_location)
+    let photo_filename = `${query.rows[0].photoid}.${query.rows[0].format}`
+    return Promise.resolve(photo_filename)
 }
 
 
@@ -178,7 +178,7 @@ export default {
     CheckPhotoResourceOwnership,
     GetAllPhotos,
     DeletePhoto,
-    GetPhotoStorageLocation,
+    GetPhotoFilename,
     GetTruePathOfPicture,
     CheckAlbumOwnership,
     DeleteAlbum,

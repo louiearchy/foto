@@ -2,6 +2,7 @@
 import { ExtendedFastifyRequest } from "../interfaces";
 import { FastifyReply } from 'fastify'
 import fsPromise from 'fs/promises'
+import nodepath from 'node:path'
 
 import UtilsFile from '../utility/file'
 import Globals from '../globals'
@@ -26,8 +27,10 @@ export default async function DeletePhotoRouteHandler(request: ExtendedFastifyRe
         return reply.code(Globals.HttpStatusCode.Unauthorized).send()
 
     // else if the user owns the photo
-    let photo_storage_location = await DatabaseQueries.GetPhotoStorageLocation(username, photo_id)
-    let thumbnail_storage_location = `built/images/thumbnails/${photo_id}.webp`
+    let photo_filename = await DatabaseQueries.GetPhotoFilename(username, photo_id)
+    let photo_storage_location = nodepath.join(Globals.StorageLocation.ForPhotos, photo_filename)
+    let thumbnail_filename = `${photo_id}.webp`
+    let thumbnail_storage_location = nodepath.join(Globals.StorageLocation.ForThumbnails, thumbnail_filename)
     await fsPromise.rm(photo_storage_location)
 
     // we check if the thumbnail for the photo exists since 
