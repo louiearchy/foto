@@ -85,7 +85,7 @@ async function RecordNewPicture( username: string, album_id: string | undefined,
 
 async function GetAlbums(username: string): Promise<AlbumEntries> {
     let query = await Globals.FotoDbClient.query(
-        `SELECT album_name, albumid FROM albums WHERE username='${username}' AND is_deleted = false`
+        `SELECT album_name, albumid FROM albums WHERE username='${username}'`
     )
     return (query.rows as AlbumEntries)
 }
@@ -134,7 +134,7 @@ async function CheckAlbumOwnership(username: string, albumid: string): Promise<b
 
 async function DeleteAlbum(username: string, albumid: string): Promise<void> {
    await Globals.FotoDbClient.query(
-        `UPDATE albums SET is_deleted = true WHERE albumid = '${albumid}' AND username = '${username}'`
+        `DELETE FROM albums WHERE albumid = '${albumid}' AND username = '${username}'`
    ) 
    return Promise.resolve()
 }
