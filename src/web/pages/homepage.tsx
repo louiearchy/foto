@@ -228,10 +228,7 @@ function PhotoCard() {
 /// --------------------------------------------------------------------------
 
 function Homepage() {
-    return <div style={{
-                    height: '100vh',
-                    width: '100vw',
-            }} className='flex-column'>
+    return <div className='flex-column respect-viewport-dimensions'>
                 <div style={{
                     width: '100%',
                     boxSizing: 'border-box',

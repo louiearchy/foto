@@ -262,6 +262,11 @@ body *::selection {
     top: 100%;
 }
 
+.respect-viewport-dimensions {
+    height: 100dvh;
+    width: 100dvw;
+}
+
 @media all and (max-width: 500px) {
     #photo-cards-container {
         height: 50%;

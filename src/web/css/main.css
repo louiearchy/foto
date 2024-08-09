@@ -54,7 +54,7 @@ body {
 }
 
 #albums-view {
-    height: 100vh;
+    height: 100dvh;
 }
 
 #albums-container {
@@ -204,8 +204,8 @@ body {
 }
 
 #album-view {
-    height: 100vh;
-    width: 100vw;
+    height: 100dvh;
+    width: 100dvw;
     box-sizing: border-box;
     padding: 0.2cm 0.5cm;
 }
@@ -306,6 +306,11 @@ body {
 }
 #album-view-current-viewed-photo-container > div:first-child > button:focus {
     outline: none;
+}
+
+.respect-viewport-dimensions {
+    height: 100dvh;
+    width: 100dvh;
 }
 
 
