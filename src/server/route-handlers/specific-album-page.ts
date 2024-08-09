@@ -14,7 +14,7 @@ export default async function SpecificAlbumPageRouteHandler (request: ExtendedFa
     
 
     if (await request.IsNotOnSession())
-        return reply.code(Globals.HttpStatusCode.Unauthorized).send()
+        return reply.redirect(Globals.HttpStatusCode.TemporaryRedirect, '/').send()
 
     let page = await fsPromise.readFile('src/web/html/mainpage.html')
     return reply.code(Globals.HttpStatusCode.Ok).type("text/html").send(page)

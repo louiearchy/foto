@@ -22,6 +22,9 @@ const HttpStatusCode = {
     // Successful Response
     Ok: 200,
 
+    // Redirection Response
+    TemporaryRedirect: 307,
+
     // Client Error Responses
     BadRequest: 400,
     Unauthorized: 401,
