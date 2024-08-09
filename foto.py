@@ -98,8 +98,13 @@ def EstablishDatabaseServerConnection(dbname: str, timeout: int):
 
     while (True):
         try:
-            database_connection = psycopg.connect(conninfo)
+            # It is possible that connecting to the database server might take some time
+            # so we supply a connect_timeout parameter to psycopg
+            database_connection = psycopg.connect(conninfo, connect_timeout=timeout)
             return database_connection
+        # It is possible that the database server isn't ready yet
+        # when we try to establish connection with it, so we should expect
+        # a psycopg.OperationalError
         except psycopg.OperationalError:
             if timeout_checker.isOverTimeout():
                 return None
