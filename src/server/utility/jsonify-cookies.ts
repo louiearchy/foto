@@ -21,7 +21,8 @@ export default function JSONifyCookies(cookies: string): any {
             if (cookie_key.length > 0 && cookie_value.length > 0) {
                 Object.defineProperty(returning_json_object, cookie_key, {
                     value: cookie_value,
-                    enumerable: true
+                    enumerable: true,
+                    writable: true
                 })
             }
         }
