@@ -82,4 +82,30 @@ describe('UtilsFile', function() {
             });
         });
     });
+
+    describe('GetFilenameFromFilePath()', function() {
+        it('should return correct filename', function() {
+            assert.equal(UtilsFile.GetFilenameFromFilePath('/some/dir/in/the/directory/a-filename.txt'), 'a-filename.txt');
+        });
+        it('should return an empty string if the path ends with a directory', function(){
+            assert.equal(UtilsFile.GetFilenameFromFilePath('/some/dir/'), '');
+        });
+    });
+
+    describe('ReplaceFileExtension()', function() {
+        it('should replace the file extension on a simple filename', function() {
+            assert.equal(UtilsFile.ReplaceFileExtension('filename.txt', '.png'), 'filename.png');
+        });
+        it('should still yield the same result if the given target file extension does not come with a dot', function(){
+            assert.equal(UtilsFile.ReplaceFileExtension('filename.txt', 'png'), 'filename.png');
+        });
+        it('should replace the file extension from multiple dotted filepath', function() {
+            assert.equal(UtilsFile.ReplaceFileExtension('some.filename.txt', '.png'), 'some.filename.png');
+        });
+        it('should add an extension for filepath that ends with a "."', function() {
+            assert.equal(UtilsFile.ReplaceFileExtension('some.filename.', 'png'), 'some.filename.png');
+            assert.equal(UtilsFile.ReplaceFileExtension('some.filename.', '.png'), 'some.filename.png');
+        });
+    });
+
 });
