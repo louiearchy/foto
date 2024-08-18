@@ -1,0 +1,85 @@
+
+// @ts-ignore
+import UtilsFile from '../src/server/utility/file' // this throws a rootDir error, but we ignore it
+import assert from 'assert'
+
+describe('UtilsFile', function() {
+    describe('IsFileExisting()', function() {
+
+        it('should return true when file exists', async function() {
+            let does_file_exists = await UtilsFile.IsFileExisting('./package.json');
+            assert.equal(does_file_exists, true);
+        });
+
+        it('should return false when file does not exist', async function() {
+            let does_file_exists = await UtilsFile.IsFileExisting('./non-existing-file');
+            assert.equal(does_file_exists, false);
+        });
+
+    });
+
+    describe('DeduceMimeTypeByFileExtension()', function() {
+        let pairs = [
+            {
+                filename: 'some.file.in.the.dir.js',
+                expected_mime: 'text/javascript'
+            },
+            {
+                filename: 'some.file.in.the.dir.css',
+                expected_mime: 'text/css'
+            },
+            {
+                filename: 'some.file.in.the.dir.otf',
+                expected_mime: 'font/otf'
+            },
+            {
+                filename: 'some.file.in.the.dir.ttf',
+                expected_mime: 'font/ttf'
+            },
+            {
+                filename: 'some.file.in.the.dir.svg',
+                expected_mime: 'image/svg+xml'
+            },
+            {
+                filename: 'some.file.in.the.dir.jpeg',
+                expected_mime: 'image/jpeg'
+            },
+            {
+                filename: 'some.file.in.the.dir.jpg',
+                expected_mime: 'image/jpeg'
+            },
+            {
+                filename: 'some.file.in.the.dir.png',
+                expected_mime: 'image/png'
+            },
+            {
+                filename: 'some.file.in.the.dir.webp',
+                expected_mime: 'image/webp'
+            },
+            {
+                filename: 'some.webp.unk',
+                expected_mime: undefined
+            }
+        ];
+        pairs.forEach( function (pair) {
+            it(`should return appropriate mime: ${pair.expected_mime} for ${pair.filename}`, function() {
+                assert.equal(UtilsFile.DeduceMimeTypeByFileExtension(pair.filename), pair.expected_mime);
+            });
+        });
+    });
+
+    describe('DeduceFileExtensionByContentType()', function() {
+        let pairs = [
+            ['image/jpeg', 'jpeg'],
+            ['image/png', 'png'],
+            ['image/webp', 'webp']
+        ];
+        pairs.forEach( function (pair) {
+            let mime = pair[0];
+            let file_extension = pair[1];
+            it(`should return appropriate file extension: '${file_extension}' of '${mime}'`, function() {
+                assert.equal(UtilsFile.DeduceFileExtensionByContentType(mime), file_extension);
+            });
+        });
+    });
+});
