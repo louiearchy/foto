@@ -55,13 +55,17 @@ function GetFilenameFromFilePath(filepath: string): string {
 
 function ReplaceFileExtension(filepath: string, to_file_extension: string): string {
     let splitted_filepath_by_dot = filepath.split(".")
+    let target_file_extension_has_dot = (to_file_extension.indexOf(".") != -1)
+    let target_file_extension = (target_file_extension_has_dot) ? 
+        to_file_extension.substring(1) : 
+        to_file_extension
     let returning_replaced_file_extension_filepath = ""
     for (let i = 0; i < splitted_filepath_by_dot.length; i++) {
         let is_at_the_end = (i == (splitted_filepath_by_dot.length - 1))
         if (is_at_the_end) {
-            returning_replaced_file_extension_filepath += to_file_extension
+            returning_replaced_file_extension_filepath += target_file_extension
         } else {
-            returning_replaced_file_extension_filepath += splitted_filepath_by_dot[i]
+            returning_replaced_file_extension_filepath += splitted_filepath_by_dot[i] + "."
         }
     }
     return returning_replaced_file_extension_filepath
