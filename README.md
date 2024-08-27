@@ -50,6 +50,13 @@ python foto.py --host=<host>
 ```
 
 
+### Running tests
+
+```
+gulp test
+```
+
+
 
 ### Other tasks
 Use these tasks to make your development easier:
