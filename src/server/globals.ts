@@ -1,6 +1,7 @@
 
 import DynamicReactPageManager from './dynamic-react-page-manager'
 import pg from 'pg'
+import { HttpStatusCode } from './universal'
 
 /**
  * The path to the file where the Dynamic React Page Manager would store
@@ -14,28 +15,7 @@ const DRPM_WATCHFILE_PATH = 'built/drpm-watch-file.json'
 */
 const DynamicReactPageManagerInstance = new DynamicReactPageManager(DRPM_WATCHFILE_PATH, 'built/web/pages/')
 
-const HttpStatusCode = {
-    
-    // Informational response
-    Continue: 100,
 
-    // Successful Response
-    Ok: 200,
-
-    // Redirection Response
-    TemporaryRedirect: 307,
-
-    // Client Error Responses
-    BadRequest: 400,
-    Unauthorized: 401,
-    NotFound: 404,
-    RequestTimeout: 408,
-    Conflict: 409,
-
-    // Server Error Responses
-    InternalServerError: 500,
-
-}
 
 const FOTODB_CONNECTION_CONFIG = {
     host: '127.0.0.1',

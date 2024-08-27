@@ -2,6 +2,7 @@
 import gulp from 'gulp'
 import mocha from 'gulp-mocha'
 import ts from 'gulp-typescript'
+import childprocess from 'node:child_process'
 
 const tsTestProject = ts.createProject('built/test/tsconfig.json', {
         target: 'ES6',
@@ -19,8 +20,84 @@ const serverProject = ts.createProject(serverDestinationFolder, {
     module: 'nodenext'
 });
 
-function SecondToMs(second) {
-    return second * 1000
+var development_server_process;
+
+// This serves as a reference to check if all of the processes
+// needed is now running
+var development_server_processes_track = {
+    server: false,
+    img_processing_service: false
+}
+
+function RunDevServerInternal() {
+    return new Promise( (resolve, reject) => {
+        
+        development_server_process = childprocess.spawn('python foto.py', { shell: true });
+
+        // We cannot use the 'spawn' event as a way to detect if the server
+        // has started, then invoking the gulp callback function, because it only
+        // tells us that the python bootloader script spawned but not the server
+        // itself, so we can only detect if the server is now running and ready
+        // to listen for clients when we detect the message "The development server is now running..."
+        development_server_process?.stdout?.on('data', function(data){
+            let msg = data.toString('utf-8');
+            
+            if (/The development server is now running at http:\/\/*/.test(msg)) {
+                development_server_processes_track.server = true;
+                let all_server_processes_is_now_running = 
+                    development_server_processes_track.server && development_server_processes_track.img_processing_service;
+                if (all_server_processes_is_now_running)
+                    resolve();
+            }
+
+            if (/image processing service is now running at localhost:3001/.test(msg)) {
+                development_server_processes_track.img_processing_service = true;
+                let all_server_processes_is_now_running =
+                    development_server_processes_track.server && development_server_processes_track.img_processing_service;
+                
+                if (all_server_processes_is_now_running)
+                    resolve();
+            }
+
+            if (/panic: runtime error: \w+/.test(msg)) {
+                reject('Runtime error occurred in running image processing service!');
+            }
+
+        });
+        development_server_process.on('error', (err) => reject(err));
+    });
+}
+
+function ShutdownDevServerInternal() {
+    return new Promise((resolve, reject) => {
+        development_server_process?.on('exit', function() {
+            resolve();
+        });
+        development_server_process?.kill();
+    })
+}
+
+function CleanDatabaseServerInternal() {
+    return new Promise((resolve, reject) => {
+        let clean_database_server_process = childprocess.spawn("psql -d fotodb -f src/reset-db.sql --quiet", { shell: true });
+        clean_database_server_process.on('exit', () => { resolve() });
+        clean_database_server_process.on('error', (err) => { reject(err) });
+    })
+}
+
+
+// This is neccessary to run before running tests since we're interacting
+// with the database
+async function clean_database_server() {
+    await CleanDatabaseServerInternal();
+}
+
+export async function run_dev_server() {
+    await RunDevServerInternal();
+}
+
+export async function shutdown_server() {
+    await ShutdownDevServerInternal();
 }
 
 export function build_server() {
@@ -31,10 +108,17 @@ function build_test() {
     return gulp.src('test/**/*.ts').pipe(tsTestProject()).pipe(gulp.dest('built/test/'))
 }
 
-function run_test() {
-    return gulp.src('built/test/**/*.js').pipe(mocha({
-        timeout: SecondToMs(5)
-    }))
+async function run_test() {
+    return gulp.src('built/test/**/*.js', { read: false })
+               .pipe(mocha({exit: true}));
 }
 
-export const test = gulp.series(build_server, build_test, run_test);
+
+export const test = gulp.series(
+    build_server, 
+    build_test, 
+    run_dev_server,
+    clean_database_server,
+    run_test, 
+    shutdown_server
+);
