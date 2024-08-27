@@ -313,10 +313,6 @@ body {
     width: 100dvh;
 }
 
-* {
-    outline: solid 1px red;
-}
-
 /* mobile phone viewport */
 @media all and (max-width: 500px) {
     :root {
