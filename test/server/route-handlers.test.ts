@@ -53,7 +53,6 @@ describe('HTML Pages', function() {
         it('should redirect if we\'re already in session', function(done) {
             let callback_test = function(response: http.IncomingMessage) {
                 homepage_with_sessionid_response = response
-                console.log(response)
                 assert.equal(response.statusCode, HttpStatusCode.FoundRedirection);
                 done();
             };
