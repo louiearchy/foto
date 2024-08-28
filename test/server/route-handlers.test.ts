@@ -3,76 +3,29 @@ import http from 'node:http'
 import assert from 'node:assert'
 // @ts-ignore
 import { HttpStatusCode } from '../../src/server/universal'
+import HttpRequest from './http-request';
 
+const SERVER = { host: 'localhost', port: 3000 }
+const ServerRequestTemplate = new HttpRequest(SERVER.host, SERVER.port)
 
-function GetServer(
-    host: string,
-    port: number,
-    path: string,
-    callback: (response: http.IncomingMessage) => void,
-    options?: { cookie: string },
-) {
-    let headers = (options && options?.cookie) ? { 'cookie': options.cookie } : {}; 
-    http.get({
-        host: host,
-        port: port,
-        path: path,
-        headers
-    }, callback)
-}
+async function RequestSessionID(): Promise<string> {
+    return new Promise (( resolve, reject) => {
 
-function PostServer(
-    host: string, 
-    port: number,
-    path: string,
-    data: string | Buffer,
-    headers?: any
-): Promise<http.IncomingMessage> {
-    return new Promise((resolve, reject) => {
-        let options = {
-            method: 'POST',
-            host: host,
-            port: port,
-            path: path
+        let data = 'username=random_username&password=random_password';
+        let headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': data.length };
+        let request_session_id_callback = (response) => {
+            let setcookie_header = response.headers['set-cookie']
+            if (setcookie_header) {
+                let sessionid = setcookie_header[0] + ";";
+                resolve(sessionid)
+            }
+            else {
+                resolve('');
+            }
         }
-        
-        if (headers)
-            Object.defineProperty(options, 'headers', { value: headers, enumerable: true });
 
-        let req = http.request(options, function(response) {
-            resolve(response);
-        });
-
-        req.on('error', function(err) {
-            reject(err);
-        });
-
-        req.write(data);
-        req.end();
+        ServerRequestTemplate.Post('/sign-up', request_session_id_callback, headers, data)
     })
-}
-
-async function RequestSessionID() {
-
-    let data = 'username=random_username&password=random_password';
-    let headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': data.length };
-
-    let response = await PostServer(
-        'localhost', 
-        3000, 
-        '/sign-up',
-        data,
-        headers
-    );
-
-    let setcookie_header = response.headers['set-cookie']
-    if (setcookie_header) {
-        let sessionid = setcookie_header[0] + ";";
-        return sessionid;
-    }
-    else {
-        return '';
-    }
 }
 
 describe('HTML Pages', function() {
@@ -87,32 +40,24 @@ describe('HTML Pages', function() {
         });
 
         it('should return homepage when not logged in', function(done) {
-            GetServer(
-                'localhost',
-                3000,
-                '/',
-                function(response) {
-                    assert.equal(response.statusCode, HttpStatusCode.Ok);
-                    assert.equal(response.headers["content-type"], "text/html");
-                    let content_length = parseInt(response.headers["content-length"] ?? "0");
-                    assert.ok(content_length > 0);
-                    done();
-                }
-            );
+            let callback_test = function(response: http.IncomingMessage) {
+                assert.equal(response.statusCode, HttpStatusCode.Ok);
+                assert.equal(response.headers["content-type"], "text/html");
+                let content_length = parseInt(response.headers["content-length"] ?? "0");
+                assert.ok(content_length > 0);
+                done();
+            }
+            ServerRequestTemplate.Get('/', callback_test);
         });
 
         it('should redirect if we\'re already in session', function(done) {
-            GetServer(
-                'localhost',
-                3000,
-                '/',
-                function (response) {
-                    homepage_with_sessionid_response = response
-                    assert.equal(response.statusCode, HttpStatusCode.FoundRedirection);
-                    done();
-                },
-                { cookie: sessionid }
-            );
+            let callback_test = function(response: http.IncomingMessage) {
+                homepage_with_sessionid_response = response
+                console.log(response)
+                assert.equal(response.statusCode, HttpStatusCode.FoundRedirection);
+                done();
+            };
+            ServerRequestTemplate.Get('/', callback_test, { cookie: sessionid });
         });
         
         it('should redirect to /home when in session', function() {
