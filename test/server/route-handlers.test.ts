@@ -8,36 +8,11 @@ import HttpRequest from './http-request';
 const SERVER = { host: 'localhost', port: 3000 }
 const ServerRequestTemplate = new HttpRequest(SERVER.host, SERVER.port)
 
-async function RequestSessionID(): Promise<string> {
-    return new Promise (( resolve, reject) => {
-
-        let data = 'username=random_username&password=random_password';
-        let headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': data.length };
-        let request_session_id_callback = (response) => {
-            let setcookie_header = response.headers['set-cookie']
-            if (setcookie_header) {
-                let sessionid = setcookie_header[0] + ";";
-                resolve(sessionid)
-            }
-            else {
-                resolve('');
-            }
-        }
-
-        ServerRequestTemplate.Post('/sign-up', request_session_id_callback, headers, data)
-    })
-}
-
 describe('HTML Pages', function() {
 
     describe('Homepage', function() {
-
-        var sessionid = ''
-        var homepage_with_sessionid_response: http.IncomingMessage | undefined;
-
-        before(async function() {
-            sessionid = await RequestSessionID();
-        });
+        
+        var homepage_with_sessionid_response;
 
         it('should return homepage when not logged in', function(done) {
             let callback_test = function(response: http.IncomingMessage) {
@@ -52,11 +27,11 @@ describe('HTML Pages', function() {
 
         it('should redirect if we\'re already in session', function(done) {
             let callback_test = function(response: http.IncomingMessage) {
-                homepage_with_sessionid_response = response
+                homepage_with_sessionid_response = response;
                 assert.equal(response.statusCode, HttpStatusCode.FoundRedirection);
                 done();
             };
-            ServerRequestTemplate.Get('/', callback_test, { cookie: sessionid });
+            ServerRequestTemplate.Get('/', callback_test, { cookie: 'sessionid=dummy_sessionid;' });
         });
         
         it('should redirect to /home when in session', function() {

@@ -77,19 +77,23 @@ function ShutdownDevServerInternal() {
     })
 }
 
-function CleanDatabaseServerInternal() {
+function RunSqlFile(path_to_sql_file) {
     return new Promise((resolve, reject) => {
-        let clean_database_server_process = childprocess.spawn("psql -d fotodb -f src/reset-db.sql --quiet", { shell: true });
-        clean_database_server_process.on('exit', () => { resolve() });
-        clean_database_server_process.on('error', (err) => { reject(err) });
+        let sql_process = childprocess.spawn(`psql -d fotodb -f ${path_to_sql_file} --quiet`, { shell: true });
+        sql_process.on('exit', resolve);
+        sql_process.on('error', reject);
     })
 }
 
 
 // This is neccessary to run before running tests since we're interacting
 // with the database
-async function clean_database_server() {
-    await CleanDatabaseServerInternal();
+async function clean_db() {
+    await RunSqlFile('src/reset-db.sql');
+}
+
+async function populate_db_with_dummy_data() {
+    await RunSqlFile('test/server/populate-with-data.sql');
 }
 
 export async function run_dev_server() {
@@ -118,7 +122,8 @@ export const test = gulp.series(
     build_server, 
     build_test, 
     run_dev_server,
-    clean_database_server,
+    clean_db,
+    populate_db_with_dummy_data,
     run_test, 
     shutdown_server
 );
