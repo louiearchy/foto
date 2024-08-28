@@ -112,7 +112,7 @@ function build_test() {
     return gulp.src('test/**/*.ts').pipe(tsTestProject()).pipe(gulp.dest('built/test/'))
 }
 
-async function run_test() {
+function run_test() {
     return gulp.src('built/test/**/*.js', { read: false })
                .pipe(mocha({exit: true}));
 }
