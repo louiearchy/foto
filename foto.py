@@ -308,7 +308,20 @@ def FotoPyExit(code, frame):
     if SERVER_PROCESS != None:
         SERVER_PROCESS.terminate()
         SERVER_PROCESS.wait()
-    FreeDatabaseRelatedResources()
+
+    # When we interrupt this script, the PostgreSQL server has somewhow is also receiving
+    # SIGINT signal which would mean that it would do a fast terminate, so we only close the
+    # existing connections to it; this prevents the message that the pg_ctl would log
+    # because it can't find the postmaster.pid
+    if code == signal.SIGINT or code == signal.SIGTERM:
+        CloseConnectionIfExists( POSTGRES_DATABASE_CONNECTION,msg="closing postgres database connection..." )
+        CloseConnectionIfExists( FOTO_DATABASE_CONNECTION, msg="closing foto database connection..." )
+
+    # The code 0 signifies that the script terminates itself which would mean that the PostgreSQL
+    # won't receive any kind of SIGINT, so we terminate it manually
+    if code == 0:
+        FreeDatabaseRelatedResources()
+
     ShutdownImageProcessingService()
     Log.info("exiting...")
     sys.exit(0)
@@ -425,7 +438,7 @@ if __name__ == "__main__":
                 BuildTest()
                 SERVER_PROCESS = RunDevelopmentServer(detached_mode=True)
                 RunTest()
-                FotoPyExit(2, None)
+                FotoPyExit(0, None)
             
             case _:
                 Log.error(f"unrecognized task: {task}")
