@@ -422,7 +422,6 @@ if __name__ == "__main__":
         if re.match("--host=\\d+", CLI_ARGS[0]):
             host = CLI_ARGS[0].replace("--host=", "")
             RunDevelopmentServer(host, 80)
-            FotoPyExit()
 
         task = CLI_ARGS[0].lower()
 
