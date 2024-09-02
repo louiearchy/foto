@@ -251,12 +251,13 @@ def ShutdownImageProcessingService():
     if IMAGE_PROCESSING_SERVICE != None:
         Log.info("shutting down image processing service...")
         IMAGE_PROCESSING_SERVICE.terminate()
+        IMAGE_PROCESSING_SERVICE.wait()
 
 def RunImageProcessingService():
     global IMAGE_PROCESSING_SERVICE
     try: 
         IMAGE_PROCESSING_SERVICE = subprocess.Popen(
-            "go run src/image-processing-service/main.go", shell=True, stdout=subprocess.PIPE
+            ['./built/foto-image-processing-service.exe'], stdout=subprocess.PIPE
         )
 
         # we wait for the img processing service to log something that it is now
@@ -268,7 +269,7 @@ def RunImageProcessingService():
             img_processing_is_not_ready = not (stdout_line.find("image processing service is now running at") > 0)
         return True
     except OSError:
-        Log.error("failed to run the database server!")
+        Log.error("failed to run the image processing service!")
         return False
 
 
@@ -312,6 +313,9 @@ def FotoPyExit(code, frame):
     Log.info("exiting...")
     sys.exit(0)
 
+def BuildImageProcessingService():
+    RunShellCommand(f"go build -C src/image-processing-service/ -o ../../built/foto-image-processing-service.exe")
+
 def RunDevelopmentServer(host: str = "localhost", port: int = 3000, detached_mode: bool = False):
 
     ExitOnFail(CheckIfOnPath("ffmpeg"), "ffmpeg is needed!")
@@ -323,6 +327,9 @@ def RunDevelopmentServer(host: str = "localhost", port: int = 3000, detached_mod
     ExitOnFail( is_building_server_successful, "failed to build the server!" )
 
     Log.info("building image processing service...")
+    ExitOnFail( BuildImageProcessingService(), "failed to build image processing service!" )
+
+    Log.info("setting up image processing service...")
     SetupImageProcessingService()
 
     Log.info("setting up database...")
