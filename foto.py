@@ -256,8 +256,17 @@ def RunImageProcessingService():
     global IMAGE_PROCESSING_SERVICE
     try: 
         IMAGE_PROCESSING_SERVICE = subprocess.Popen(
-            "go run src/image-processing-service/main.go", shell=True
+            "go run src/image-processing-service/main.go", shell=True, stdout=subprocess.PIPE
         )
+
+        # we wait for the img processing service to log something that it is now
+        # ready to listen before we return a True value
+        stdout_line = ""
+        img_processing_is_not_ready = True
+        while img_processing_is_not_ready:
+            stdout_line = IMAGE_PROCESSING_SERVICE.stdout.readline().decode('utf-8')
+            print(stdout_line, end='')
+            img_processing_is_not_ready = not (stdout_line.find("image processing service is now running at") > 0)
         return True
     except OSError:
         Log.error("failed to run the database server!")
