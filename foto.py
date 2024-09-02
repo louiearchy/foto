@@ -265,7 +265,6 @@ def RunImageProcessingService():
         img_processing_is_not_ready = True
         while img_processing_is_not_ready:
             stdout_line = IMAGE_PROCESSING_SERVICE.stdout.readline().decode('utf-8')
-            print(stdout_line, end='')
             img_processing_is_not_ready = not (stdout_line.find("image processing service is now running at") > 0)
         return True
     except OSError:
