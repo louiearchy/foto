@@ -29,7 +29,11 @@ export default class HttpRequest {
         if (headers)
             Object.defineProperty(options, 'headers', { value: headers, enumerable: true })
 
-        http.get(options, callback)
+        let request = http.get(options, (response) => {
+            callback(response); 
+            request.destroy();
+        });
+
     }
 
     public Post(
@@ -49,7 +53,10 @@ export default class HttpRequest {
         if (headers)
             Object.defineProperty(options, 'headers', { value: headers, enumerable: true })
 
-        let request = http.request(options, callback)
+        let request = http.request(options, (response) => {
+            callback(response); 
+            request.destroy();
+        });
 
         if (data) {
             request.write(data)
