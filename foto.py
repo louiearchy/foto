@@ -7,6 +7,7 @@ import re
 import sys
 import datetime
 import shutil
+import signal
 
 PATH = os.getenv("PATH").split(";")
 PATH.pop() # this removes the empty string at the end
@@ -15,10 +16,10 @@ CLI_ARGS = sys.argv[1:]
 DEFAULT_DATABASE_CLUSTER_PATH = "built/database-cluster/"
 SERVER_DATABASE_HOST = "localhost"
 SERVER_DATABASE_PORT = 5432
-DATABASE_SERVER_PROCESS = None
 POSTGRES_DATABASE_CONNECTION = None
 FOTO_DATABASE_CONNECTION = None
 IMAGE_PROCESSING_SERVICE = None
+SERVER_PROCESS = None
 
 class ANSI:
     
@@ -56,19 +57,26 @@ class TimeoutManager:
         ending_time = datetime.datetime.now()
         return (self.starting_time - ending_time).total_seconds() >= self.timeout
 
-def RunShellCommand(cmd: str, no_output: bool = False):
-    if no_output:
-        return subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    else:
-        return subprocess.run(cmd, shell=True)
+def RunShellCommand(cmd: str, no_output: bool = False, no_stdin: bool = False):
+    stdout_pipe = subprocess.DEVNULL if no_output else None
+    stderr_pipe = stdout_pipe
+    stdin_pipe = subprocess.DEVNULL if no_stdin else None
+    return subprocess.run(cmd, shell=True, stdout=stdout_pipe, stderr=stderr_pipe, stdin=stdin_pipe)
 
 def BuildServer():
     cmd = "npx tsc --project ./src/server/tsconfig.json"
     process = RunShellCommand(cmd)
     return process
 
-def RunServer(host: str, port: int):
-    return RunShellCommand(f"node ./built/server/server.js {host} {port}")
+# The separate_thread_mode here specifies that whether the server subprocess
+# should block the main thread until it ends or not, when true, the server subprocess
+# doesn't block the thread and this script is free to do other things
+def RunServer(host: str, port: int, separate_thread_mode: bool):
+    run_server_cmd = f"node ./built/server/server.js {host} {port}"
+    if separate_thread_mode:
+        return subprocess.Popen(run_server_cmd)
+    else:
+        return RunShellCommand(f"node ./built/server/server.js {host} {port}")
 
 def ExitOnFail(condition: bool, message_when_process_fails: str | None = None):
     if condition == False:
@@ -150,20 +158,13 @@ def CloseConnectionIfExists(connection: psycopg.Connection, msg: str = ""):
         connection.close()
 
 def CloseDatabaseServer():
-    if DATABASE_SERVER_PROCESS != None:
-        Log.info("closing database server...")
-        DATABASE_SERVER_PROCESS.terminate()
-        # wait for the database server process to terminate
-        # before this script exits
-        while DATABASE_SERVER_PROCESS.poll() != None:
-            continue
+    if os.path.exists("./built/database-cluster/postmaster.pid"):
+        RunShellCommand(f"pg_ctl stop -D {DEFAULT_DATABASE_CLUSTER_PATH} -m fast", no_stdin=False)
 
 def FreeDatabaseRelatedResources():
-
+    global POSTGRES_DATABASE_CONNECTION, FOTO_DATABASE_CONNECTION
     CloseConnectionIfExists( POSTGRES_DATABASE_CONNECTION,msg="closing postgres database connection..." )
-
     CloseConnectionIfExists( FOTO_DATABASE_CONNECTION, msg="closing foto database connection..." )
-
     CloseDatabaseServer()
     
 
@@ -202,14 +203,9 @@ def IsDatabaseClusterExisting():
 
 def RunDatabaseServer():
     Log.info("running database server...")
-    global DATABASE_SERVER_PROCESS
-    postgres = GetExecutablePath("postgres")
+    pg_ctl = GetExecutablePath("pg_ctl")
     try:
-        DATABASE_SERVER_PROCESS = subprocess.Popen(
-            [postgres, "-D", DEFAULT_DATABASE_CLUSTER_PATH],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
+        RunShellCommand(' '.join([pg_ctl, "start", "-D", DEFAULT_DATABASE_CLUSTER_PATH]), no_stdin=True)
         return True
     except OSError:
         Log.info("failed to run the database server!")
@@ -296,36 +292,39 @@ def SetupImageProcessingService():
     if os.path.exists(photos_directory_path) == False:
         os.makedirs(photos_directory_path)
 
-def FotoPyExit():
-    Log.info("heard a keyboard interrupt, shutting down services!")
+def FotoPyExit(code, frame):
+    # we terminate the server process first before
+    # terminating the db server to prevent errors in regards to
+    # postgresql connection
+    if SERVER_PROCESS != None:
+        SERVER_PROCESS.terminate()
+        SERVER_PROCESS.wait()
     FreeDatabaseRelatedResources()
-
     ShutdownImageProcessingService()
     Log.info("exiting...")
-    exit(0)
+    sys.exit(0)
 
-def RunDevelopmentServer(host: str = "localhost", port: int = 3000):
-    try:
+def RunDevelopmentServer(host: str = "localhost", port: int = 3000, detached_mode: bool = False):
 
-        ExitOnFail(CheckIfOnPath("ffmpeg"), "ffmpeg is needed!")
-        ExitOnFail(CheckIfOnPath("go"), "go is needed!")
+    ExitOnFail(CheckIfOnPath("ffmpeg"), "ffmpeg is needed!")
+    ExitOnFail(CheckIfOnPath("go"), "go is needed!")
 
-        Log.info("building server...")
-        building_server_process = BuildServer()
-        is_building_server_successful = building_server_process.returncode == 0
-        ExitOnFail( is_building_server_successful, "failed to build the server!" )
+    Log.info("building server...")
+    building_server_process = BuildServer()
+    is_building_server_successful = building_server_process.returncode == 0
+    ExitOnFail( is_building_server_successful, "failed to build the server!" )
 
-        Log.info("building image processing service...")
-        SetupImageProcessingService()
+    Log.info("building image processing service...")
+    SetupImageProcessingService()
 
-        Log.info("setting up database...")
-        ExitOnFail( SetupDatabase() )
-        ExitOnFail( RunImageProcessingService() )
+    Log.info("setting up database...")
+    ExitOnFail( SetupDatabase() )
+    ExitOnFail( RunImageProcessingService() )
 
-        RunServer(host, port)
-
-    except KeyboardInterrupt:
-        FotoPyExit()
+    if detached_mode:
+        return RunServer(host, port, detached_mode)
+    else:
+        RunServer(host, port, False)
         
 
 def DeleteFilesByGlob(glob_expr: str):
@@ -380,10 +379,20 @@ def HardReset():
     DeleteDir("built/server/")
     DeleteDir("built/web/")
 
+def BuildTest():
+    RunShellCommand("npx tsc --project test/server/tsconfig.json")
+
+def RunTest():
+    Log.info("running test...")
+    RunShellCommand("npx mocha './built/test/server/**/*.test.js' --require './built/test/fixture.js'")
+
 if __name__ == "__main__":
 
     no_arguments_were_given = len(CLI_ARGS) == 0
     there_were_arguments_given = not no_arguments_were_given
+
+    signal.signal(signal.SIGINT, FotoPyExit)
+    signal.signal(signal.SIGTERM, FotoPyExit)
 
     if no_arguments_were_given:
         RunDevelopmentServer()
@@ -404,6 +413,12 @@ if __name__ == "__main__":
 
             case "hard-reset":
                 HardReset()
+            
+            case "test":
+                BuildTest()
+                SERVER_PROCESS = RunDevelopmentServer(detached_mode=True)
+                RunTest()
+                FotoPyExit(2, None)
             
             case _:
                 Log.error(f"unrecognized task: {task}")

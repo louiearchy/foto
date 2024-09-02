@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "tsBuildInfoFile": "../../built/test/server/.tsbuildinfo",
+        "incremental": true,
+        "outDir": "../../built/",
+        "target": "ES2016",
+        "moduleResolution": "NodeNext",
+        "module": "nodenext",
+        "esModuleInterop": true
+    },
+    "include": [
+        "./**/*.ts",
+        "../fixture.ts"
+    ]
+}
