@@ -345,16 +345,8 @@ def CleanData():
     if FunctionFailed( RunDatabaseServer() ):
         return
 
-    if FunctionFailed( EstablishFotoDatabaseServerConnection(10) ):
-        return FreeDatabaseRelatedResources()
-
-    cursor = FOTO_DATABASE_CONNECTION.cursor()
     Log.info("deleting all records...")
-    cursor.execute("DELETE FROM accounts")
-    cursor.execute("DELETE FROM sessions")
-    cursor.execute("DELETE FROM photos")
-    cursor.execute("DELETE FROM albums")
-    FOTO_DATABASE_CONNECTION.commit()
+    RunShellCommand("psql -d fotodb -f src/reset-db.sql", no_stdin=True)
 
     Log.info("deleting all photos from built/...")
     DeletePhotos()
