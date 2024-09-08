@@ -68,13 +68,23 @@ def BuildServer():
     process = RunShellCommand(cmd)
     return process
 
+def WaitForMessage(process: subprocess.Popen, expected_message: str):
+    message_hasnt_been_logged_yet = True
+    while message_hasnt_been_logged_yet:
+        stdout_message = process.stdout.readline().decode("utf-8")
+        message_hasnt_been_logged_yet = not (stdout_message.find(expected_message) >= 0)
+
+
 # The separate_thread_mode here specifies that whether the server subprocess
 # should block the main thread until it ends or not, when true, the server subprocess
 # doesn't block the thread and this script is free to do other things
 def RunServer(host: str, port: int, separate_thread_mode: bool):
     run_server_cmd = f"node ./built/server/server.js {host} {port}"
     if separate_thread_mode:
-        return subprocess.Popen(run_server_cmd)
+        process = subprocess.Popen(run_server_cmd, stdout=subprocess.PIPE)
+        # we wait for the dev server to properly listen
+        WaitForMessage(process, "The development server is now running at http://")
+        return process
     else:
         return RunShellCommand(f"node ./built/server/server.js {host} {port}")
 
@@ -262,11 +272,7 @@ def RunImageProcessingService():
 
         # we wait for the img processing service to log something that it is now
         # ready to listen before we return a True value
-        stdout_line = ""
-        img_processing_is_not_ready = True
-        while img_processing_is_not_ready:
-            stdout_line = IMAGE_PROCESSING_SERVICE.stdout.readline().decode('utf-8')
-            img_processing_is_not_ready = not (stdout_line.find("image processing service is now running at") > 0)
+        WaitForMessage(IMAGE_PROCESSING_SERVICE, "image processing service is now running at")
         return True
     except OSError:
         Log.error("failed to run the image processing service!")
