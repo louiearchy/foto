@@ -30,35 +30,44 @@ describe('APIs', function() {
             }, { cookie: 'sessionid=dummy_sessionid;'});
 
         })
-        it('should respond 400 Bad Request when the client requests without giving an album id', function(done) {
-            ServerRequestTemplate.Get('/album/name/', function(response) {
-                assert.equal(response.statusCode, HttpStatusCode.BadRequest);
-                done();
-            })
-        });
-        it('should respond 401 Unauthorized when we don\'t have any session id cookie', function(done) {
-            ServerRequestTemplate.Get('/album/name/some-album-id', function(response) {
-                assert.equal(response.statusCode, HttpStatusCode.Unauthorized);
-                done();
+        
+        describe('Scenario 1: No albumid was given', function() {
+            it('should respond 400 Bad Request when the client requests', function(done) {
+                ServerRequestTemplate.Get('/album/name/', function(response) {
+                    assert.equal(response.statusCode, HttpStatusCode.BadRequest);
+                    done();
+                })
             });
         });
-        it('should return a 200 Ok on a complete valid request', function() {
-            assert.equal(valid_album_name_request_incomingmessage.statusCode, HttpStatusCode.Ok);
-        })
-        it('should return an album name if the owner has it', function() {
-            assert.equal(valid_album_name_request_data, "My Album");
-        })
-        it('should have a content-type in its response', function() {
-            assert.ok(valid_album_name_request_incomingmessage?.headers['content-type'])
-        })
-        it('should have a content-length in its response', function() {
-            assert.ok(valid_album_name_request_incomingmessage?.headers['content-length'])
-        })
-        it('should have a content-length greater than 0 bytes', function() {
-            assert.ok(parseInt(valid_album_name_request_incomingmessage?.headers['content-length']) > 0)
-        })
-        it('should return a text/plain content-type', function() {
-            assert.ok(valid_album_name_request_incomingmessage?.headers['content-type'].includes('text/plain'))
+        
+        describe('Scenario 2: No sessionid when requesting for this route', function() {
+            it('should respond 401 Unauthorized', function(done) {
+                ServerRequestTemplate.Get('/album/name/some-album-id', function(response) {
+                    assert.equal(response.statusCode, HttpStatusCode.Unauthorized);
+                    done();
+                });
+            });
+        });
+        
+        describe('Scenario 3: A complete and valid request', function() {
+            it('should return a 200 Ok on a complete valid request', function() {
+                assert.equal(valid_album_name_request_incomingmessage.statusCode, HttpStatusCode.Ok);
+            })
+            it('should return an album name if the owner has it', function() {
+                assert.equal(valid_album_name_request_data, "My Album");
+            })
+            it('should have a content-type in its response', function() {
+                assert.ok(valid_album_name_request_incomingmessage?.headers['content-type'])
+            })
+            it('should have a content-length in its response', function() {
+                assert.ok(valid_album_name_request_incomingmessage?.headers['content-length'])
+            })
+            it('should have a content-length greater than 0 bytes', function() {
+                assert.ok(parseInt(valid_album_name_request_incomingmessage?.headers['content-length']) > 0)
+            })
+            it('should return a text/plain content-type', function() {
+                assert.ok(valid_album_name_request_incomingmessage?.headers['content-type'].includes('text/plain'))
+            }) 
         })
     });
 })
