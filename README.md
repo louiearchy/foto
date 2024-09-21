@@ -53,7 +53,7 @@ python foto.py --host=<host>
 ### Running tests
 
 ```
-gulp test
+python foto.py test
 ```
 
 
