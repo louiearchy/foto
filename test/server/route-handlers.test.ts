@@ -8,6 +8,61 @@ import HttpRequest from './http-request';
 const SERVER = { host: 'localhost', port: 3000 }
 const ServerRequestTemplate = new HttpRequest(SERVER.host, SERVER.port)
 
+describe('APIs', function() {
+    describe('GET /album/name/:albumid', function() {
+
+        let valid_album_name_request_incomingmessage: http.IncomingMessage | undefined;
+        let valid_album_name_request_data = ""
+
+        before(function(done) {
+
+            ServerRequestTemplate.AsyncGet('/album/name/albumid-001-001', async function(response: http.IncomingMessage) {
+                return new Promise((asyncResolve, reject) => {
+                    response.on('data', function(chunk) {
+                        valid_album_name_request_data += chunk.toString();
+                    });
+                    response.on('end', function() {
+                        valid_album_name_request_incomingmessage = response;
+                        done();
+                        asyncResolve();
+                    })
+                });
+            }, { cookie: 'sessionid=dummy_sessionid;'});
+
+        })
+        it('should respond 400 Bad Request when the client requests without giving an album id', function(done) {
+            ServerRequestTemplate.Get('/album/name/', function(response) {
+                assert.equal(response.statusCode, HttpStatusCode.BadRequest);
+                done();
+            })
+        });
+        it('should respond 401 Unauthorized when we don\'t have any session id cookie', function(done) {
+            ServerRequestTemplate.Get('/album/name/some-album-id', function(response) {
+                assert.equal(response.statusCode, HttpStatusCode.Unauthorized);
+                done();
+            });
+        });
+        it('should return a 200 Ok on a complete valid request', function() {
+            assert.equal(valid_album_name_request_incomingmessage.statusCode, HttpStatusCode.Ok);
+        })
+        it('should return an album name if the owner has it', function() {
+            assert.equal(valid_album_name_request_data, "My Album");
+        })
+        it('should have a content-type in its response', function() {
+            assert.ok(valid_album_name_request_incomingmessage?.headers['content-type'])
+        })
+        it('should have a content-length in its response', function() {
+            assert.ok(valid_album_name_request_incomingmessage?.headers['content-length'])
+        })
+        it('should have a content-length greater than 0 bytes', function() {
+            assert.ok(parseInt(valid_album_name_request_incomingmessage?.headers['content-length']) > 0)
+        })
+        it('should return a text/plain content-type', function() {
+            assert.ok(valid_album_name_request_incomingmessage?.headers['content-type'].includes('text/plain'))
+        })
+    });
+})
+
 describe('HTML Pages', function() {
 
     describe('Homepage', function() {

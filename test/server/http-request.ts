@@ -1,6 +1,7 @@
 import http from 'node:http'
 
 type OnResponseCallbackFunction = (response: http.IncomingMessage) => void
+type OnResponseCallbackAsyncFunction = (response: http.IncomingMessage) => Promise<void | Function>
 
 interface HttpRequestHeaders {
     cookie?: string | string[],
@@ -34,6 +35,22 @@ export default class HttpRequest {
             request.destroy();
         });
 
+    }
+
+    public AsyncGet(url: string, callback: OnResponseCallbackAsyncFunction, headers?: HttpRequestHeaders) {
+        let options = {
+            host: this.host,
+            port: this.port,
+            path: url
+        }
+
+        if (headers)
+            Object.defineProperty(options, 'headers', { value: headers, enumerable: true })
+
+        let request = http.get(options, async (response) => {
+            await callback(response);
+            request.destroy();
+        })
     }
 
     public Post(
