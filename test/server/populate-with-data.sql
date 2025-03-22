@@ -1,5 +1,8 @@
 
-INSERT INTO sessions (username, sessionid) VALUES ('dummy_username', 'dummy_sessionid');
+INSERT INTO sessions (username, sessionid) VALUES 
+    ('dummy_username', 'dummy_sessionid'),
+    ('dummy_username2', 'dummy_sessionid2');
+
 
 INSERT INTO albums (
     username,

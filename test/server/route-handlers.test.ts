@@ -17,6 +17,11 @@ describe('APIs', function() {
         let invalid_album_id_for_album_name_request_incomingmessage: http.IncomingMessage | undefined
         let invalid_album_id_for_album_name_request_data = ""
 
+        // This is for requests that wants to retrieve the name of an album
+        // that they do not own or unauthorized to do so
+        let invalid_session_id_request_incomingmessage: http.IncomingMessage | undefined
+        let invalid_session_id_request_data = ""
+
         before(function(done) {
             ServerRequestTemplate.AsyncGet('/album/name/albumid-001-001', async function(response: http.IncomingMessage) {
                 return new Promise((asyncResolve, reject) => {
@@ -45,6 +50,21 @@ describe('APIs', function() {
                     })
                 });
             }, { cookie: 'sessionid=dummy_sessionid' })
+        })
+
+        before(function(done) {
+            ServerRequestTemplate.AsyncGet('/album/name/albumid-001-001', async function (response: http.IncomingMessage) {
+                return new Promise((resolve, reject) => {
+                    response.on('data', function(chunk) {
+                        invalid_session_id_request_data += chunk.toString()
+                    })
+                    response.on('end', function() {
+                        invalid_session_id_request_incomingmessage = response
+                        done()
+                        resolve()
+                    })
+                })
+            }, { cookie: 'sessionid=dummy_sessionid2' })
         })
             
         
@@ -96,6 +116,19 @@ describe('APIs', function() {
             })
             it('should not return any body data', function() {
                 assert.equal(invalid_album_id_for_album_name_request_data.length, 0);
+            })
+        })
+
+        describe('Scenario 5: Unauthorized client requesting other client\'s album names', function() {
+            it('should return a 404 Not Found', function() {
+                assert.equal(invalid_session_id_request_incomingmessage.statusCode, HttpStatusCode.NotFound)
+            })
+            it('should not return any album name', function() {
+                assert.equal(invalid_session_id_request_data.length, 0)
+                assert.equal(invalid_session_id_request_incomingmessage?.headers['content-length'], '0')
+            })
+            it('should not have content-type header', function() {
+                assert.ok(!invalid_session_id_request_incomingmessage?.headers['content-type'])
             })
         })
     });
