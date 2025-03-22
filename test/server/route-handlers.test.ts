@@ -14,22 +14,39 @@ describe('APIs', function() {
         let valid_album_name_request_incomingmessage: http.IncomingMessage | undefined;
         let valid_album_name_request_data = ""
 
-        before(function(done) {
+        let invalid_album_id_for_album_name_request_incomingmessage: http.IncomingMessage | undefined
+        let invalid_album_id_for_album_name_request_data = ""
 
+        before(function(done) {
             ServerRequestTemplate.AsyncGet('/album/name/albumid-001-001', async function(response: http.IncomingMessage) {
                 return new Promise((asyncResolve, reject) => {
                     response.on('data', function(chunk) {
-                        valid_album_name_request_data += chunk.toString();
+                        valid_album_name_request_data += chunk.toString()
                     });
                     response.on('end', function() {
-                        valid_album_name_request_incomingmessage = response;
-                        done();
-                        asyncResolve();
+                        valid_album_name_request_incomingmessage = response
+                        done()
+                        asyncResolve()
                     })
                 });
-            }, { cookie: 'sessionid=dummy_sessionid;'});
-
+            }, { cookie: 'sessionid=dummy_sessionid;'})
         })
+
+        before(function(done) {
+            ServerRequestTemplate.AsyncGet('/album/name/invalid-album-id', async function(response: http.IncomingMessage) {
+                return new Promise((resolve, reject) => {
+                    response.on('data', function(chunk) {
+                        invalid_album_id_for_album_name_request_data += chunk.toString()
+                    })
+                    response.on('end', function() {
+                        invalid_album_id_for_album_name_request_incomingmessage = response
+                        done()
+                        resolve()
+                    })
+                });
+            }, { cookie: 'sessionid=dummy_sessionid' })
+        })
+            
         
         describe('Scenario 1: No albumid was given', function() {
             it('should respond 400 Bad Request when the client requests', function(done) {
@@ -68,6 +85,18 @@ describe('APIs', function() {
             it('should return a text/plain content-type', function() {
                 assert.ok(valid_album_name_request_incomingmessage?.headers['content-type'].includes('text/plain'))
             }) 
+        })
+
+        describe('Scenario 4: Invalid albumid was given', function() {
+            it('should return a 404 Not Found', function() {
+                assert.equal(invalid_album_id_for_album_name_request_incomingmessage.statusCode, HttpStatusCode.NotFound)
+            })
+            it('should not have content-type header', function() {
+                assert.ok(!invalid_album_id_for_album_name_request_incomingmessage?.headers['content-type'])
+            })
+            it('should not return any body data', function() {
+                assert.equal(invalid_album_id_for_album_name_request_data.length, 0);
+            })
         })
     });
 })
