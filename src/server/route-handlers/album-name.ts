@@ -21,6 +21,12 @@ export default async function AlbumNameRouteHandler(request: ExtendedFastifyRequ
     if (album_id_is_invalid)
         return reply.code(Globals.HttpStatusCode.NotFound).send()
 
+    let clients_username = await DatabaseQueries.GetUsernameBySessionID(request.cookies?.sessionid)
+    let the_album_is_not_owned_by_the_client = !(await DatabaseQueries.CheckAlbumOwnership(clients_username, albumid))
+
+    if (the_album_is_not_owned_by_the_client)
+        return reply.code(Globals.HttpStatusCode.NotFound).send()
+
     return reply.code(Globals.HttpStatusCode.Ok).type("text/plain").send(album_name)
 
 }
