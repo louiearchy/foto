@@ -81,7 +81,7 @@ def WaitForMessage(process: subprocess.Popen, expected_message: str):
 def RunServer(host: str, port: int, separate_thread_mode: bool):
     run_server_cmd = f"node ./built/server/server.js {host} {port}"
     if separate_thread_mode:
-        process = subprocess.Popen(run_server_cmd, stdout=subprocess.PIPE)
+        process = subprocess.Popen(run_server_cmd)
         # we wait for the dev server to properly listen
         WaitForMessage(process, "The development server is now running at http://")
         return process
