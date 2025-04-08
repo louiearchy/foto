@@ -1,0 +1,48 @@
+
+.classic {
+    background-color: white;
+    border: none;
+    border-radius: 0.2rem;
+    color: black;
+    font-weight: 700;
+    padding: 0.2cm 0.5cm;
+    text-decoration: none;
+    user-select: none;
+}
+
+.classic:focus {
+    outline: solid 0.1rem black;
+    outline-offset: 0.1rem;
+}
+
+.classic:hover {
+    color: #ffd34b;
+}
+
+.classic:active {
+    background-color: transparent;
+    color: black;
+}
+
+.classic-on-white {
+    background-color: black;
+    border: none;
+    border-radius: 0.2rem;
+    color: #ffd34b;
+    font-family: 'Poppins';
+    font-size: 1em;
+    font-weight: 700;
+    padding: 0.2cm 0.5cm;
+    text-decoration: none;
+    user-select: none;
+}
+
+.classic-on-white:focus {
+    outline: solid 0.1rem black;
+    outline-offset: 0.2rem;
+}
+
+.classic-on-white:active {
+    background-color: #ffd34b;
+    color: black;
+}

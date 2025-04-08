@@ -8,6 +8,7 @@ import sys
 import datetime
 import shutil
 import signal
+import json
 
 PATH = os.getenv("PATH").split(";")
 PATH.pop() # this removes the empty string at the end
@@ -16,10 +17,13 @@ CLI_ARGS = sys.argv[1:]
 DEFAULT_DATABASE_CLUSTER_PATH = "built/database-cluster/"
 SERVER_DATABASE_HOST = "localhost"
 SERVER_DATABASE_PORT = 5432
+MAIN_SERVER_HOST = "localhost"
+MAIN_SERVER_PORT = 3000
 POSTGRES_DATABASE_CONNECTION = None
 FOTO_DATABASE_CONNECTION = None
 IMAGE_PROCESSING_SERVICE = None
 SERVER_PROCESS = None
+NEXTJS_FRAMEWORK_DEV_PROCESS = None
 
 class ANSI:
     
@@ -81,7 +85,7 @@ def WaitForMessage(process: subprocess.Popen, expected_message: str):
 def RunServer(host: str, port: int, separate_thread_mode: bool):
     run_server_cmd = f"node ./built/server/server.js {host} {port}"
     if separate_thread_mode:
-        process = subprocess.Popen(run_server_cmd, stdout=subprocess.PIPE)
+        process = subprocess.Popen(run_server_cmd, stdout=subprocess.PIPE, env=os.environ.copy())
         # we wait for the dev server to properly listen
         WaitForMessage(process, "The development server is now running at http://")
         return process
@@ -315,6 +319,10 @@ def FotoPyExit(code, frame):
         SERVER_PROCESS.terminate()
         SERVER_PROCESS.wait()
 
+    if NEXTJS_FRAMEWORK_DEV_PROCESS != None:
+        NEXTJS_FRAMEWORK_DEV_PROCESS.terminate()
+        NEXTJS_FRAMEWORK_DEV_PROCESS.wait()
+
     # When we interrupt this script, the PostgreSQL server has somewhow is also receiving
     # SIGINT signal which would mean that it would do a fast terminate, so we only close the
     # existing connections to it; this prevents the message that the pg_ctl would log
@@ -335,7 +343,7 @@ def FotoPyExit(code, frame):
 def BuildImageProcessingService():
     RunShellCommand(f"go build -C src/image-processing-service/ -o ../../built/foto-image-processing-service.exe")
 
-def RunDevelopmentServer(host: str = "localhost", port: int = 3000, detached_mode: bool = False):
+def RunDevelopmentServer(host: str = MAIN_SERVER_HOST, port: int = MAIN_SERVER_PORT, detached_mode: bool = False):
 
     ExitOnFail(CheckIfOnPath("ffmpeg"), "ffmpeg is needed!")
     ExitOnFail(CheckIfOnPath("go"), "go is needed!")
@@ -356,10 +364,29 @@ def RunDevelopmentServer(host: str = "localhost", port: int = 3000, detached_mod
     ExitOnFail( RunImageProcessingService() )
 
     if detached_mode:
-        return RunServer(host, port, detached_mode)
+        process = RunServer(host, port, detached_mode)
     else:
         RunServer(host, port, False)
-        
+
+def RunNextJsProcess():
+    cmd = 'npx next dev -H localhost -p 4000'
+    nextjs_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    WaitForMessage(nextjs_process, "Ready in")
+    return nextjs_process
+    
+
+def RunNextJsInDevMode():
+    global NEXTJS_FRAMEWORK_DEV_PROCESS
+
+    Log.info("running nextjs...")
+    NEXTJS_FRAMEWORK_DEV_PROCESS = RunNextJsProcess()
+
+    Log.info("nextjs is now running at http://localhost:4000")
+
+def RunOnLoop():
+    while True:
+        continue
+
 
 def DeleteFilesByGlob(glob_expr: str):
     for file in glob.iglob(glob_expr):
@@ -412,6 +439,20 @@ def RunTest():
     Log.info("running test...")
     RunShellCommand("npx mocha './built/test/server/**/*.test.js' --require './built/test/fixture.js'")
 
+def AddEnvVariable(key: str, value: str):
+    os.environ[key] = value
+
+# The file here would be used by NextJS app
+# to know where to send its requests for the main server
+def GenerateServerAddress():
+    Log.info("generating server address file...")
+
+    if not os.path.exists("public/"):
+        os.mkdir("public")
+    server_address_json = open("public/main_server_address.txt", "w")
+    server_address_json.write(f"http://{MAIN_SERVER_HOST}:{MAIN_SERVER_PORT}")
+    server_address_json.close()
+
 if __name__ == "__main__":
 
     no_arguments_were_given = len(CLI_ARGS) == 0
@@ -419,15 +460,23 @@ if __name__ == "__main__":
 
     signal.signal(signal.SIGINT, FotoPyExit)
     signal.signal(signal.SIGTERM, FotoPyExit)
+    
+    AddEnvVariable("NEXTJS_APP_ADDRESS", "http://localhost:4000")
 
     if no_arguments_were_given:
-        RunDevelopmentServer()
+        SERVER_PROCESS = RunDevelopmentServer(detached_mode=True)
+        GenerateServerAddress()
+        RunNextJsInDevMode()
+        RunOnLoop()
     
     elif there_were_arguments_given:
 
         if re.match("--host=\\d+", CLI_ARGS[0]):
             host = CLI_ARGS[0].replace("--host=", "")
-            RunDevelopmentServer(host, 80)
+            SERVER_PROCESS = RunDevelopmentServer(host, 80)
+            GenerateServerAddress()
+            RunNextJsInDevMode()
+            RunOnLoop()
 
         task = CLI_ARGS[0].lower()
 

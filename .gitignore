@@ -1,2 +1,4 @@
 node_modules/
 built/
+.next/
+public/main_server_address.txt

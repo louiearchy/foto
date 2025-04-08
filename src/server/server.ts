@@ -6,6 +6,7 @@ import fsPromise from 'node:fs/promises'
 import net from 'node:net'
 import nodepath from 'node:path'
 import process from 'node:process'
+import cors from '@fastify/cors'
 
 import DatabaseQueries from './database-queries'
 import Globals from './globals'
@@ -16,20 +17,15 @@ import UtilsFile from './utility/file'
 import UtilsID from './utility/id'
 
 import AlbumNameRouteHandler from './route-handlers/album-name'
-import AssetsRouteHandler from './route-handlers/assets'
 import CreateAlbumRouteHandler from './route-handlers/create-album'
 import DeleteAlbumRouteHandler from './route-handlers/delete-album'
 import DeletePhotoRouteHandler from './route-handlers/delete-photo'
 import GetAlbumsListRouteHandler from './route-handlers/albums-list'
-import HomepageRouteHandler from './route-handlers/homepage'
 import LogInRouteHandler from './route-handlers/log-in'
-import MainPageRouteHandler from './route-handlers/mainpage'
 import PhotosRouteHandler from './route-handlers/photos'
 import PhotoRouteHandler from './route-handlers/photo'
 import PostPictureRouteHandler from './route-handlers/post-picture'
-import ReactPageScriptHandler from './route-handlers/react-page-scripts'
 import SignUpRouteHandler from './route-handlers/sign-up'
-import SpecificAlbumPageRouteHandler from './route-handlers/specific-album-page'
 import ThumbnailRouteHandler from './route-handlers/thumbnail'
 
 namespace ANSI {
@@ -43,8 +39,14 @@ const SERVER_HOST = process.argv[2]
 const SERVER_PORT = parseInt(process.argv[3])
 const SERVER_CONFIG = { host: SERVER_HOST, port: SERVER_PORT }
 
+
 const SERVER = Fastify()
 SERVER.register(require('@fastify/formbody'))
+SERVER.register(cors, {
+    origin: process.env?.NEXTJS_APP_ADDRESS,
+    methods: 'GET,HEAD,POST,OPTIONS,DELETE',
+    credentials: true
+})
 
 SERVER.addHook('onRequest', (request: ExtendedFastifyRequest, reply, done) => {
 
@@ -163,14 +165,7 @@ SERVER.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], function 
     }
 })
 
-SERVER.get("/", HomepageRouteHandler)
-SERVER.get("/log-in", HomepageRouteHandler)
-SERVER.get("/sign-up", HomepageRouteHandler)
-SERVER.get("/pages/*", ReactPageScriptHandler)
-SERVER.get("/assets/*", AssetsRouteHandler)
 SERVER.get("/albums", GetAlbumsListRouteHandler)
-SERVER.get("/home", MainPageRouteHandler)
-SERVER.get("/album/:albumid", SpecificAlbumPageRouteHandler)
 SERVER.get("/album/name/:albumid", AlbumNameRouteHandler)
 SERVER.get("/photos/:albumid", PhotosRouteHandler)
 SERVER.get("/photo/:photo_resource", PhotoRouteHandler)
@@ -184,16 +179,8 @@ SERVER.post("/to/album/:id?", PostPictureRouteHandler)
 SERVER.delete('/photo/:id', DeletePhotoRouteHandler)
 SERVER.delete('/album/:id', DeleteAlbumRouteHandler)
 
-LinkPathToFile("/react", "node_modules/react/umd/react.development.js", SERVER)
-LinkPathToFile("/react-dom", "node_modules/react-dom/umd/react-dom.development.js", SERVER)
-LinkPathToFile("/react-router-dom", "node_modules/react-router-dom/dist/umd/react-router-dom.development.js", SERVER)
-LinkPathToFile("/react-router", "node_modules/react-router/dist/umd/react-router.development.js", SERVER)
-LinkPathToFile("/remix-router", "node_modules/@remix-run/router/dist/router.umd.js", SERVER)
-LinkPathToFile("/jquery", "node_modules/jquery/dist/jquery.js", SERVER)
-
 async function Exit(exit_code: number) {
     await Globals.FotoDbClient.end()
-    Globals.DynamicReactPageManagerInstance.Save()
     process.exit(exit_code)
 }
 

@@ -1,0 +1,24 @@
+.default {
+    border: solid 0.1rem #d6d6d6; 
+    border-radius: 0.2rem;
+    font-family: 'Poppins';
+    font-weight: 400;
+    font-size: 1.1em;
+    padding: 0.2cm 0.5cm;
+    display: block;
+}
+
+.default:focus {
+    border-color: #ffd34b;
+    outline: solid 0.01rem #ffd34b;
+    outline-offset: 0.1rem;
+}
+
+.warning {
+    color: #ff0000;
+    display: block;
+    font-family: 'Poppins';
+    font-weight: 400;
+    font-size: 0.8em;
+    height: 1em;
+}

@@ -1,0 +1,19 @@
+.default {
+    background-color: white;
+    border-radius: 0.2rem;
+    box-sizing: border-box;
+    height: 90%;
+    padding: 0.8cm;
+    width: 35%;
+    min-width: 10cm;
+    max-width: 12cm;
+}
+
+.default span:first-child {
+    font-weight: 700;
+    font-size: 1.7em;
+}
+
+.default input[type='text'] {
+    width: 70%;
+}

@@ -1,0 +1,10 @@
+.default {
+	background-color: red;
+	border-radius: 0.1rem;
+	color: white;
+	font-weight: 700;
+	padding: 0.2cm 0.5cm;
+	position: absolute;
+	font-size: 1em;
+    top: 100%;
+}
