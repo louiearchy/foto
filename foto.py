@@ -8,7 +8,6 @@ import sys
 import datetime
 import shutil
 import signal
-import json
 
 PATH = os.getenv("PATH").split(";")
 PATH.pop() # this removes the empty string at the end
