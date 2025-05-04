@@ -104,7 +104,7 @@ def processStillRunning(process: subprocess.Popen[bytes]):
     return process.poll() is None
 
 def terminateProcess(process_symbol: any, msg: str | None = None):
-    if hasattr(PROCESS_LIST, process_symbol) and\
+    if process_symbol in PROCESS_LIST and\
         PROCESS_LIST[process_symbol] is not None:
         process = typing.cast(subprocess.Popen[bytes], PROCESS_LIST[process_symbol])
         if processStillRunning(process):
