@@ -15,17 +15,19 @@ function RunSqlFile(path_to_sql_file): Promise<void> {
 }
 
 async function CleanDB() {
-    await RunSqlFile('src/clean-db.sql');
+    await RunSqlFile('test/sqls/clean-dummy-data.sql');
 }
 
 async function PopulateDbWithDummyData() {
-    await RunSqlFile('test/server/populate-with-data.sql');
+    await RunSqlFile('test/sqls/populate-dummy-data.sql');
 }
 
 export const mochaGlobalSetup = async function ()  {
-    console.log('cleaning test db');
-    await CleanDB()
-
     console.log('populating db with dummy data...');
     await PopulateDbWithDummyData()
+}
+
+export const mochaGlobalTeardown = async function() {
+    console.log('cleaning up after test...')
+    await CleanDB()
 }
