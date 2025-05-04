@@ -15,7 +15,7 @@ function RunSqlFile(path_to_sql_file): Promise<void> {
 }
 
 async function CleanDB() {
-    await RunSqlFile('src/reset-db.sql');
+    await RunSqlFile('src/clean-db.sql');
 }
 
 async function PopulateDbWithDummyData() {
