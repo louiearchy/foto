@@ -90,29 +90,6 @@ SERVER.addHook('onRequest', (request: ExtendedFastifyRequest, reply, done) => {
     done()
 })
 
-/**
- * A helper function that takes care of the mechanisms in binding a request.path to
- * a specific file
- */
-function LinkPathToFile(request_path: string, filepath: string, server) {
-    server.get(request_path, async (_, reply) => {
-        let file_exists = await UtilsFile.IsFileExisting(filepath)
-        if (file_exists) {
-            let fileData = await fsPromise.readFile(filepath)
-            let file_mime_type = UtilsFile.DeduceMimeTypeByFileExtension(filepath)
-            if (file_mime_type) {
-                reply.type(file_mime_type)
-            }
-            reply.code(Globals.HttpStatusCode.Ok).send(fileData)
-        }
-        else /* if the file does not exist */ {
-            reply.code(Globals.HttpStatusCode.NotFound)
-        }
-    })
-}
-
-
-
 function DownResolutePhoto(path_to_photo: string): Promise<string> {
     return new Promise( (resolve, reject) => {
         let filename = UtilsFile.GetFilenameFromFilePath(path_to_photo)
