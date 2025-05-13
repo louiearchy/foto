@@ -16,3 +16,7 @@ INSERT INTO albums (
     'albumid-001-001',
     'My Album'
 );
+
+INSERT INTO photos (
+    username, photoid, format
+) VALUES ( 'dummy', 'photoid-001-001', 'jpeg' );
