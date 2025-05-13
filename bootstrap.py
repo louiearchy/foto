@@ -73,9 +73,6 @@ def checkIfOnPath(*args):
     status_if_good_to_go = not there_are_missing_executables 
     return status_if_good_to_go
 
-def postgreSQLIsRunning():
-    return os.path.exists(POSTMASTER_PID)
-
 def handleExecutableArgument(args):
     args_list = list(args)
     running_an_executable_on_PATH = not (args_list[0].startswith(".") or os.path.isabs(args_list[0]))
@@ -128,9 +125,8 @@ def runExitRoutine():
     terminateProcess(p_NextJs,
                      msg="shutting down nextjs...")
 
-    if postgreSQLIsRunning():
-        info("shutting down postgresql server...")
-        runShell("pg_ctl", "stop", "-D", DATABASE_CLUSTER)
+    info("shutting down postgresql server...")
+    runShell("pg_ctl", "stop", "-D", DATABASE_CLUSTER)
 
     shutdown_routine_already_run = True
 
@@ -202,8 +198,12 @@ def t_setupDatabaseCluster():
         info("successfully initialized database cluster!")
 
 def t_runPostgreSQLServer():
-    if postgreSQLIsRunning():
-        return
+
+    # instead of using postmaster.pid to see if a PostgreSQL instance
+    # is running before running, we just shut down any instance
+    # running the database cluster
+    runShell("pg_ctl", "stop", "-D", DATABASE_CLUSTER)
+
     info("running postgresql server...")
     process = runShell("pg_ctl", "start", "-D", DATABASE_CLUSTER)
     abortOnFail(process, msg="failed to run postgresql server!")
@@ -238,7 +238,7 @@ def t_runPostgreSQLServer():
             time.sleep(5)
 
 def t_setupFotoDatabase():
-    db_connection = psycopg.connect("dbname=postgres")
+    db_connection = psycopg.connect("dbname=postgres", connect_timeout=10)
     db_connection.autocommit = True
     db_cursor = db_connection.cursor()
     query_result = db_cursor.execute(
