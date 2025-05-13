@@ -31,7 +31,7 @@ export default async function DeleteAlbumRouteHandler(request: ExtendedFastifyRe
     let client_does_not_own_the_album = !(await DatabaseQueries.CheckAlbumOwnership(username, albumid))
 
     if (client_does_not_own_the_album)
-        return reply.code(Globals.HttpStatusCode.BadRequest).send()
+        return reply.code(Globals.HttpStatusCode.Unauthorized).send()
 
     await DeletePhotosFromAlbum(username, albumid)
 
